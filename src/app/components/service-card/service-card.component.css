@@ -1,0 +1,6 @@
+.service-card { position: relative; display: flex; flex-direction: column; min-height: 190px; padding: 25px; border: 1px solid var(--line); background: var(--white); transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+.service-card:hover { border-color: var(--yellow); box-shadow: 0 15px 30px rgba(10, 31, 48, .1); transform: translateY(-5px); }
+.service-icon { display: grid; place-items: center; width: 42px; height: 42px; margin-bottom: 24px; background: var(--soft-yellow); color: var(--yellow-deep); font-size: 1.25rem; }
+.service-card h3 { margin: 0 0 9px; color: var(--navy); font-size: 1rem; }
+.service-card p { max-width: 220px; margin: 0; color: var(--muted); font-size: .83rem; line-height: 1.55; }
+.service-arrow { position: absolute; right: 24px; bottom: 24px; color: var(--yellow-deep); font-size: 1.25rem; }

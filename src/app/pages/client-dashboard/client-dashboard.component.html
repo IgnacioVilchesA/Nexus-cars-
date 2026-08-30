@@ -1,0 +1,62 @@
+<main class="client-page">
+    <header class="topbar"><a class="brand" href="/"><span class="brand-mark">TN</span><strong>TORQUE NORTE</strong></a>
+        <div class="user-area"><span>{{ user.name }}</span><button (click)="logout()">Cerrar sesión</button></div>
+    </header>
+    <div class="container content">
+        <div class="welcome">
+            <div>
+                <p class="eyebrow">Portal de clientes</p>
+                <h1>Hola, {{ user.name.split(' ')[0] }}.</h1>
+                <p>Aquí puedes revisar todo lo que ocurre con tus vehículos.</p>
+            </div>
+            <div class="account-status"><span class="status-dot"></span> Cuenta activa</div>
+        </div>
+        <section class="summary-grid">
+            <div><span>Vehículos registrados</span><strong>{{ vehicles.length }}</strong></div>
+            <div><span>Órdenes en curso</span><strong>{{ orders.length }}</strong></div>
+            <div><span>Próxima mantención</span><strong>{{ orders[0]?.nextMaintenance || 'Por definir' }}</strong></div>
+        </section>
+        <section class="vehicles-section">
+            <div class="section-title">
+                <div>
+                    <p class="eyebrow">Tu garaje</p>
+                    <h2>Mis vehículos</h2>
+                </div>
+            </div>
+            <div class="vehicle-grid">
+                <article *ngFor="let vehicle of vehicles" class="vehicle-card">
+                    <div class="vehicle-icon">{{ vehicle.type === 'Moto' ? 'MOTO' : 'AUTO' }}</div>
+                    <div>
+                        <h3>{{ vehicle.brand }} {{ vehicle.model }}</h3>
+                        <p>{{ vehicle.plate }} · {{ vehicle.year }}</p>
+                    </div>
+                </article>
+            </div>
+        </section>
+        <section class="orders-section">
+            <div class="section-title">
+                <div>
+                    <p class="eyebrow">Información actualizada</p>
+                    <h2>Mis órdenes de trabajo</h2>
+                </div>
+            </div>
+            <div class="order-list">
+                <article class="order-card" *ngFor="let order of orders">
+                    <div class="order-main">
+                        <div class="order-head"><span>#{{ order.id }}</span><b
+                                [class]="'status status-' + order.status">{{ order.status | titlecase }}</b></div>
+                        <h3>{{ vehicleLabel(order.vehicleId) }}</h3>
+                        <p>{{ order.description }}</p>
+                        <div class="tags"><span *ngFor="let service of order.services">{{ service }}</span></div>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-track"><span
+                                [style.width.%]="order.status === 'recibido' ? 25 : order.status === 'diagnóstico' ? 50 : order.status === 'reparación' ? 75 : 100"></span>
+                        </div><small>Actualizado por el taller</small>
+                    </div>
+                </article>
+                <p class="empty" *ngIf="!orders.length">No tienes órdenes registradas todavía.</p>
+            </div>
+        </section>
+    </div>
+</main>

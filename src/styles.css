@@ -1,1 +1,21 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700;900&display=swap');
+
+:root {
+	--navy: #0b2839;
+	--ink: #183b4d;
+	--muted: #6b8189;
+	--yellow: #f4c430;
+	--yellow-deep: #bd8d00;
+	--cream: #f4f2ed;
+	--light-blue: #e6eff0;
+	--white: #fff;
+	--line: #d6e0e0;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--cream); color: var(--ink); font-family: 'DM Sans', sans-serif; }
+button, a { font-family: inherit; }
+.container { width: min(1120px, calc(100% - 48px)); margin: 0 auto; }
+
+@media (max-width: 520px) { .container { width: min(100% - 34px, 1120px); } }

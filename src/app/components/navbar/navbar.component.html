@@ -1,0 +1,24 @@
+<header class="site-header">
+  <nav class="navbar container" aria-label="Navegación principal">
+    <a class="brand" routerLink="/" (click)="closeMenu()" aria-label="Torque Norte, inicio">
+      <span class="brand-mark" aria-hidden="true">TN</span>
+      <span class="brand-copy"><strong>TORQUE</strong><small>NORTE</small></span>
+    </a>
+
+    <button class="menu-toggle" type="button" (click)="toggleMenu()" [attr.aria-expanded]="menuOpen" aria-label="Abrir menú">
+      <span></span><span></span><span></span>
+    </button>
+
+    <div class="nav-content" [class.is-open]="menuOpen">
+      <div class="nav-links">
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeMenu()">Inicio</a>
+        <a href="/#servicios" (click)="closeMenu()">Servicios</a>
+        <a href="/#nosotros" (click)="closeMenu()">Nosotros</a>
+        <a href="/#contacto" (click)="closeMenu()">Contacto</a>
+      </div>
+      <a class="nav-login" routerLink="/login" (click)="closeMenu()">
+        <span aria-hidden="true">&#8594;</span> Iniciar sesión
+      </a>
+    </div>
+  </nav>
+</header>

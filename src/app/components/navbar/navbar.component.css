@@ -1,0 +1,37 @@
+:host { display: block; }
+
+.site-header {
+  position: absolute;
+  z-index: 10;
+  top: 0;
+  width: 100%;
+  color: var(--ink);
+}
+
+.navbar { display: flex; align-items: center; justify-content: space-between; min-height: 84px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
+.brand-mark { display: grid; place-items: center; width: 38px; height: 38px; background: var(--yellow); color: var(--navy); font-size: .8rem; font-weight: 900; letter-spacing: -.04em; transform: skew(-8deg); }
+.brand-copy { display: flex; flex-direction: column; line-height: .82; letter-spacing: .1em; }
+.brand-copy strong { font-size: 1.05rem; }
+.brand-copy small { margin-top: 5px; color: var(--muted); font-size: .55rem; font-weight: 800; letter-spacing: .28em; }
+.nav-content, .nav-links { display: flex; align-items: center; }
+.nav-content { gap: 42px; }
+.nav-links { gap: 30px; }
+.nav-links a { position: relative; color: var(--muted); font-size: .84rem; font-weight: 700; text-decoration: none; transition: color .2s ease; }
+.nav-links a::after { position: absolute; right: 0; bottom: -9px; left: 0; height: 2px; background: var(--yellow); content: ''; transform: scaleX(0); transition: transform .2s ease; }
+.nav-links a:hover, .nav-links a.active { color: var(--ink); }
+.nav-links a:hover::after, .nav-links a.active::after { transform: scaleX(1); }
+.nav-login { display: inline-flex; align-items: center; gap: 8px; padding: 12px 17px; border: 1px solid var(--line); color: var(--ink); font-size: .82rem; font-weight: 800; text-decoration: none; transition: background .2s ease, border-color .2s ease; }
+.nav-login:hover { border-color: var(--yellow); background: var(--yellow); }
+.nav-login span { color: var(--yellow-deep); font-size: 1.2rem; line-height: 0; }
+.menu-toggle { display: none; border: 0; background: transparent; cursor: pointer; }
+.menu-toggle span { display: block; width: 24px; height: 2px; margin: 5px; background: var(--ink); }
+
+@media (max-width: 760px) {
+  .navbar { min-height: 72px; }
+  .menu-toggle { display: block; }
+  .nav-content { position: absolute; top: 72px; right: 16px; left: 16px; display: none; padding: 20px; background: var(--white); box-shadow: 0 16px 35px rgba(10, 31, 48, .14); }
+  .nav-content.is-open { display: block; }
+  .nav-links { align-items: flex-start; flex-direction: column; gap: 20px; }
+  .nav-login { justify-content: center; width: 100%; margin-top: 22px; box-sizing: border-box; }
+}

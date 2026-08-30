@@ -1,0 +1,26 @@
+:host { display: block; min-height: 100vh; background: #f3f6f5; color: var(--ink); }
+.dashboard { min-height: 100vh; }
+.topbar { display: flex; align-items: center; justify-content: space-between; min-height: 76px; padding: 0 max(24px, calc((100% - 1120px) / 2)); background: var(--navy); color: white; }
+.brand { display: flex; align-items: center; gap: 11px; color: white; font-size: .85rem; letter-spacing: .12em; text-decoration: none; }
+.brand-mark { display: grid; place-items: center; width: 36px; height: 36px; background: var(--yellow); color: var(--navy); font-size: .75rem; font-weight: 900; transform: skew(-8deg); }
+.user-area { display: flex; align-items: center; gap: 22px; font-size: .78rem; }
+.user-area button { border: 0; background: transparent; color: var(--yellow); cursor: pointer; font: inherit; font-weight: 800; }
+.content { padding: 55px 0 80px; }
+.welcome, .section-title { display: flex; align-items: end; justify-content: space-between; gap: 25px; margin-bottom: 35px; }
+.eyebrow { margin: 0 0 9px; color: var(--yellow-deep); font-size: .68rem; font-weight: 900; letter-spacing: .15em; text-transform: uppercase; }
+.welcome h1, h2 { margin: 0; color: var(--navy); font-family: 'Bebas Neue', Impact, sans-serif; font-weight: 400; letter-spacing: .02em; }
+.welcome h1 { font-size: 3.8rem; line-height: .95; }
+.welcome > div > p:last-child { color: var(--muted); font-size: .85rem; }
+.stats { display: flex; gap: 10px; }
+.stats div { min-width: 95px; padding: 14px 16px; border: 1px solid var(--line); background: white; }
+.stats strong, .stats span { display: block; }.stats strong { color: var(--navy); font-size: 1.5rem; }.stats span { margin-top: 4px; color: var(--muted); font-size: .65rem; }
+.forms-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 70px; }
+.forms-grid form { display: flex; flex-direction: column; gap: 11px; padding: 24px; border: 1px solid var(--line); background: white; }
+.forms-grid h2 { margin-bottom: 8px; font-size: 1.65rem; }
+.forms-grid input, .forms-grid select, .service-form input, .service-form select { min-width: 0; height: 40px; padding: 0 10px; border: 1px solid var(--line); background: white; color: var(--ink); font: inherit; font-size: .74rem; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.forms-grid button, .service-form button { margin-top: 4px; padding: 11px; border: 0; background: var(--navy); color: white; cursor: pointer; font: inherit; font-size: .72rem; font-weight: 800; }.forms-grid button span { color: var(--yellow); font-size: 1rem; }
+.section-title h2 { font-size: 3rem; }.service-form { display: flex; gap: 8px; }.service-form button { margin: 0; background: var(--yellow-deep); }
+.order-list { display: flex; flex-direction: column; gap: 11px; }.order-card { display: flex; justify-content: space-between; gap: 25px; padding: 22px 25px; border: 1px solid var(--line); background: white; }.order-id { color: var(--yellow-deep); font-size: .7rem; font-weight: 900; }.order-card h3 { margin: 8px 0 5px; color: var(--navy); font-size: 1rem; }.order-card p { margin: 0; color: var(--muted); font-size: .75rem; }.tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 14px; }.tags span { padding: 5px 8px; background: var(--light-blue); color: var(--ink); font-size: .62rem; font-weight: 700; }.order-actions label { display: flex; flex-direction: column; gap: 7px; color: var(--muted); font-size: .65rem; font-weight: 800; }.order-actions select { height: 38px; padding: 0 10px; border: 1px solid var(--yellow); background: var(--cream); color: var(--ink); font: inherit; font-size: .75rem; font-weight: 800; }
+@media (max-width: 850px) { .forms-grid { grid-template-columns: 1fr 1fr; }.forms-grid form:last-child { grid-column: span 2; }.welcome { align-items: flex-start; flex-direction: column; }.stats { width: 100%; }.stats div { flex: 1; } }
+@media (max-width: 600px) { .topbar { padding: 0 17px; }.user-area span { display: none; }.content { padding-top: 35px; }.welcome h1 { font-size: 3rem; }.forms-grid { grid-template-columns: 1fr; }.forms-grid form:last-child { grid-column: auto; }.section-title { align-items: flex-start; flex-direction: column; }.service-form { width: 100%; flex-direction: column; }.order-card { align-items: flex-start; flex-direction: column; }.order-actions { width: 100%; }.order-actions select { width: 100%; } }
