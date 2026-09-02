@@ -1,8 +1,8 @@
 <main class="login-page">
 	<section class="login-brand-panel">
-		<a class="brand" routerLink="/" aria-label="Volver a Torque Norte">
-			<span class="brand-mark">TN</span>
-			<span class="brand-copy"><strong>TORQUE</strong><small>NORTE</small></span>
+		<a class="brand" routerLink="/" aria-label="Volver a NEXUS CARS">
+			<span class="brand-mark">NX</span>
+			<span class="brand-copy"><strong>NEXUS</strong><small>CARS</small></span>
 		</a>
 		<div class="brand-message">
 			<p class="eyebrow"><span></span> Portal de clientes</p>
@@ -30,13 +30,14 @@
 				<div class="password-field"><input id="password" name="password" type="password" [(ngModel)]="password" required minlength="6" placeholder="••••••••" #passwordInput="ngModel" /><span aria-hidden="true">◉</span></div>
 				@if (passwordInput.invalid && passwordInput.touched) { <small class="field-error">La contraseña debe tener al menos 6 caracteres.</small> }
 
-				<div class="form-options"><label class="remember"><input type="checkbox" name="remember" [(ngModel)]="remember" /> <span>Recordarme</span></label><a href="mailto:hola&#64;torquenorte.cl?subject=Recuperar%20contraseña">¿Olvidaste tu contraseña?</a></div>
-				<button class="submit-button" type="submit" [disabled]="loginForm.invalid">Ingresar a mi cuenta <span>→</span></button>
+				<div class="form-options"><label class="remember"><input type="checkbox" name="remember" [(ngModel)]="remember" /> <span>Recordarme</span></label><a href="mailto:hola&#64;nexuscars.cl?subject=Recuperar%20contraseña">¿Olvidaste tu contraseña?</a></div>
+				<button class="submit-button" type="submit" [disabled]="loginForm.invalid || loading">
+					{{ loading ? 'Ingresando...' : 'Ingresar a mi cuenta' }} <span>→</span>
+				</button>
 				@if (errorMessage) { <p class="form-error">{{ errorMessage }}</p> }
-				@if (submitted && loginForm.valid) { <p class="form-success">Solicitud recibida. Conectaremos tu cuenta con la plataforma.</p> }
 			</form>
 
-			<p class="help-text">¿Aún no tienes una cuenta? <a href="mailto:hola&#64;torquenorte.cl?subject=Crear%20cuenta">Solicita acceso</a></p>
+			<p class="help-text">¿Aún no tienes una cuenta? <a href="mailto:hola&#64;nexuscars.cl?subject=Crear%20cuenta">Solicita acceso</a></p>
 		</div>
 	</section>
 </main>

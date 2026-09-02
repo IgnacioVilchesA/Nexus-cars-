@@ -1,63 +1,132 @@
 import { Injectable, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { User, Vehicle, WorkOrder, WorkOrderStatus } from '../../models/workshop.models';
-
-const USERS_KEY = 'torque-users';
-const VEHICLES_KEY = 'torque-vehicles';
-const ORDERS_KEY = 'torque-orders';
-const SESSION_KEY = 'torque-session';
 
 @Injectable({ providedIn: 'root' })
 export class WorkshopService {
-  private readonly defaultUsers: User[] = [
-    { id: 1, name: 'Administrador Torque', email: 'admin@torquenorte.cl', password: 'admin123', role: 'admin' },
-    { id: 2, name: 'Camila Rojas', email: 'cliente@torquenorte.cl', password: 'cliente123', role: 'cliente' }
-  ];
-  private readonly defaultVehicles: Vehicle[] = [
-    { id: 1, ownerId: 2, type: 'Auto', brand: 'Mazda', model: 'CX-5', plate: 'KT-42-18', year: 2021 },
-    { id: 2, ownerId: 2, type: 'Moto', brand: 'Yamaha', model: 'FZ 25', plate: 'LM-08-77', year: 2022 }
-  ];
-  private readonly defaultOrders: WorkOrder[] = [
-    { id: 1001, clientId: 2, vehicleId: 1, description: 'Mantención de 40.000 km y revisión de frenos.', status: 'diagnóstico', services: ['Cambio de aceite', 'Revisión de frenos'], createdAt: '28 ago 2024', nextMaintenance: '28 feb 2025' },
-    { id: 1002, clientId: 2, vehicleId: 2, description: 'Revisión general para viaje.', status: 'listo', services: ['Mantención preventiva'], createdAt: '12 jul 2024', nextMaintenance: '12 ene 2025' }
-  ];
+  private readonly apiUrl = 'http://localhost:3000/api';
 
-  currentUser = signal<User | null>(this.readSession());
-  users = signal<User[]>(this.readUsers());
-  vehicles = signal<Vehicle[]>(this.read(VEHICLES_KEY, this.defaultVehicles));
-  orders = signal<WorkOrder[]>(this.read(ORDERS_KEY, this.defaultOrders));
+  currentUser = signal<User | null>(this.getStoredUser());
+  users = signal<User[]>([]);
+  vehicles = signal<Vehicle[]>([]);
+  orders = signal<WorkOrder[]>([]);
 
-  login(email: string, password: string): User | null {
-    const normalizedEmail = email.trim().toLowerCase();
-    const user = this.users().find((item) => item.email.toLowerCase() === normalizedEmail && item.password === password) ?? null;
-    if (user) {
-      localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-      this.currentUser.set(user);
-    }
-    return user;
+  constructor(private readonly http: HttpClient) {
+    this.loadUsers();
+    this.loadVehicles();
+    this.loadOrders();
   }
 
-  logout(): void { localStorage.removeItem(SESSION_KEY); this.currentUser.set(null); }
-  addClient(name: string, email: string, password: string): void { this.saveUsers([...this.users(), { id: Date.now(), name, email, password, role: 'cliente' }]); }
-  addVehicle(vehicle: Omit<Vehicle, 'id'>): void { this.saveVehicles([...this.vehicles(), { ...vehicle, id: Date.now() }]); }
-  addOrder(order: Omit<WorkOrder, 'id' | 'createdAt'>): void { this.saveOrders([...this.orders(), { ...order, id: Date.now(), createdAt: new Date().toLocaleDateString('es-CL') }]); }
-  updateOrderStatus(id: number, status: WorkOrderStatus): void { this.saveOrders(this.orders().map((order) => order.id === id ? { ...order, status } : order)); }
-  addService(id: number, service: string): void { this.saveOrders(this.orders().map((order) => order.id === id ? { ...order, services: [...order.services, service] } : order)); }
-  clientOrders(clientId: number): WorkOrder[] { return this.orders().filter((order) => order.clientId === clientId); }
+  private getStoredUser(): User | null {
+    try {
+      const stored = localStorage.getItem('nexus_user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  }
 
-  private saveUsers(value: User[]): void { this.users.set(value); localStorage.setItem(USERS_KEY, JSON.stringify(value)); }
-  private saveVehicles(value: Vehicle[]): void { this.vehicles.set(value); localStorage.setItem(VEHICLES_KEY, JSON.stringify(value)); }
-  private saveOrders(value: WorkOrder[]): void { this.orders.set(value); localStorage.setItem(ORDERS_KEY, JSON.stringify(value)); }
-  private readUsers(): User[] {
-    const storedUsers = this.read<User[]>(USERS_KEY, []);
-    const mergedUsers = [...this.defaultUsers];
-    for (const storedUser of storedUsers) {
-      if (!mergedUsers.some((user) => user.email.toLowerCase() === storedUser.email.toLowerCase())) {
-        mergedUsers.push(storedUser);
+  login(email: string, password: string, onResult?: (user: User | null, error?: string) => void): void {
+    this.http.post<User>(`${this.apiUrl}/login`, { email, password }).subscribe({
+      next: (user) => {
+        this.currentUser.set(user);
+        try {
+          localStorage.setItem('nexus_user', JSON.stringify(user));
+        } catch {}
+        onResult?.(user);
+      },
+      error: (err) => {
+        this.currentUser.set(null);
+        try {
+          localStorage.removeItem('nexus_user');
+        } catch {}
+        let msg = 'El correo o la contraseña no son correctos.';
+        if (err.status === 0) {
+          msg = 'No se pudo conectar con el servidor backend (puerto 3000). Asegúrate de que la API esté iniciada.';
+        } else if (err.error?.message) {
+          msg = err.error.message;
+        }
+        onResult?.(null, msg);
       }
-    }
-    localStorage.setItem(USERS_KEY, JSON.stringify(mergedUsers));
-    return mergedUsers;
+    });
   }
-  private read<T>(key: string, fallback: T): T { const stored = localStorage.getItem(key); return stored ? JSON.parse(stored) as T : fallback; }
-  private readSession(): User | null { const stored = localStorage.getItem(SESSION_KEY); return stored ? JSON.parse(stored) as User : null; }
+
+  logout(): void {
+    this.currentUser.set(null);
+    try {
+      localStorage.removeItem('nexus_user');
+    } catch {}
+  }
+
+  addClient(name: string, email: string, password: string): void {
+    this.http.post<User>(`${this.apiUrl}/users`, { name, email, password, role: 'cliente' }).subscribe({
+      next: (user) => this.users.update((items) => [...items, user]),
+      error: () => console.error('No se pudo crear el cliente')
+    });
+  }
+
+  addVehicle(vehicle: Omit<Vehicle, 'id'>): void {
+    this.http.post<Vehicle>(`${this.apiUrl}/vehicles`, vehicle).subscribe({
+      next: (newVehicle) => this.vehicles.update((items) => [...items, newVehicle]),
+      error: () => console.error('No se pudo crear el vehículo')
+    });
+  }
+
+  addOrder(order: Omit<WorkOrder, 'id' | 'createdAt'>): void {
+    this.http.post<WorkOrder>(`${this.apiUrl}/orders`, {
+      ...order,
+      clientId: order.clientId,
+      vehicleId: order.vehicleId,
+      status: order.status,
+      description: order.description,
+      services: order.services,
+      nextMaintenance: order.nextMaintenance
+    }).subscribe({
+      next: (newOrder) => this.orders.update((items) => [newOrder, ...items]),
+      error: () => console.error('No se pudo crear la orden')
+    });
+  }
+
+  updateOrderStatus(id: number, status: WorkOrderStatus): void {
+    this.http.patch<WorkOrder>(`${this.apiUrl}/orders/${id}/status`, { status }).subscribe({
+      next: (updatedOrder) => {
+        this.orders.update((items) => items.map((order) => order.id === id ? { ...order, ...updatedOrder } : order));
+      },
+      error: () => console.error('No se pudo actualizar el estado')
+    });
+  }
+
+  addService(id: number, service: string): void {
+    this.http.post<string[]>(`${this.apiUrl}/orders/${id}/services`, { service }).subscribe({
+      next: (services) => {
+        this.orders.update((items) => items.map((order) => order.id === id ? { ...order, services } : order));
+      },
+      error: () => console.error('No se pudo agregar el servicio')
+    });
+  }
+
+  clientOrders(clientId: number): WorkOrder[] {
+    return this.orders().filter((order) => order.clientId === clientId);
+  }
+
+  private loadUsers(): void {
+    this.http.get<User[]>(`${this.apiUrl}/users`).subscribe({
+      next: (users) => this.users.set(users),
+      error: () => this.users.set([])
+    });
+  }
+
+  private loadVehicles(): void {
+    this.http.get<Vehicle[]>(`${this.apiUrl}/vehicles`).subscribe({
+      next: (vehicles) => this.vehicles.set(vehicles),
+      error: () => this.vehicles.set([])
+    });
+  }
+
+  private loadOrders(): void {
+    this.http.get<WorkOrder[]>(`${this.apiUrl}/orders`).subscribe({
+      next: (orders) => this.orders.set(orders),
+      error: () => this.orders.set([])
+    });
+  }
 }

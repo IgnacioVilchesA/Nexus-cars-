@@ -1,12 +1,12 @@
 <main class="client-page">
-    <header class="topbar"><a class="brand" href="/"><span class="brand-mark">TN</span><strong>TORQUE NORTE</strong></a>
-        <div class="user-area"><span>{{ user.name }}</span><button (click)="logout()">Cerrar sesión</button></div>
+    <header class="topbar"><a class="brand" href="/"><span class="brand-mark">NC</span><strong>NEXUS CARS</strong></a>
+        <div class="user-area"><span>{{ user?.name || 'Cliente' }}</span><button (click)="logout()">Cerrar sesión</button></div>
     </header>
     <div class="container content">
         <div class="welcome">
             <div>
                 <p class="eyebrow">Portal de clientes</p>
-                <h1>Hola, {{ user.name.split(' ')[0] }}.</h1>
+                <h1>Hola{{ user?.name ? ', ' + user?.name?.split(' ')?.at(0) : '' }}.</h1>
                 <p>Aquí puedes revisar todo lo que ocurre con tus vehículos.</p>
             </div>
             <div class="account-status"><span class="status-dot"></span> Cuenta activa</div>
@@ -14,7 +14,7 @@
         <section class="summary-grid">
             <div><span>Vehículos registrados</span><strong>{{ vehicles.length }}</strong></div>
             <div><span>Órdenes en curso</span><strong>{{ orders.length }}</strong></div>
-            <div><span>Próxima mantención</span><strong>{{ orders[0]?.nextMaintenance || 'Por definir' }}</strong></div>
+            <div><span>Próxima mantención</span><strong>{{ (orders[0] && orders[0].nextMaintenance) ? orders[0].nextMaintenance : 'Por definir' }}</strong></div>
         </section>
         <section class="vehicles-section">
             <div class="section-title">

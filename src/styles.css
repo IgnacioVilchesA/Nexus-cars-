@@ -1,21 +1,53 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700;900&display=swap');
 
 :root {
-	--navy: #0b2839;
-	--ink: #183b4d;
-	--muted: #6b8189;
-	--yellow: #f4c430;
-	--yellow-deep: #bd8d00;
-	--cream: #f4f2ed;
-	--light-blue: #e6eff0;
-	--white: #fff;
-	--line: #d6e0e0;
+  --bg: #050505;
+  --panel: #111111;
+  --panel-2: #181818;
+  --text: #f7f7f7;
+  --muted: #d0d0d0;
+  --red: #ff1e2d;
+  --red-dark: #b3001b;
+  --red-soft: #ff4a5a;
+  --line: rgba(255, 30, 45, 0.28);
+  --shadow: rgba(255, 30, 45, 0.42);
 }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; background: var(--cream); color: var(--ink); font-family: 'DM Sans', sans-serif; }
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top, rgba(255, 30, 45, 0.18), transparent 30%),
+    linear-gradient(180deg, #020202 0%, #0b0b0b 35%, #121212 100%);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+}
+
 button, a { font-family: inherit; }
-.container { width: min(1120px, calc(100% - 48px)); margin: 0 auto; }
+
+.container {
+  width: min(1120px, calc(100% - 48px));
+  margin: 0 auto;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+}
+
+button {
+  background: linear-gradient(135deg, var(--red-soft) 0%, var(--red) 45%, var(--red-dark) 100%);
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px var(--shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+button:hover {
+  background: linear-gradient(135deg, var(--red) 0%, var(--red-dark) 100%);
+  box-shadow: 0 16px 40px rgba(255, 30, 45, 0.55);
+  transform: translateY(-1px);
+}
 
 @media (max-width: 520px) { .container { width: min(100% - 34px, 1120px); } }
