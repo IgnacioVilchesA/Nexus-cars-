@@ -26,6 +26,11 @@ const mapOrder = async (order) => {
     'SELECT service_name FROM work_order_services WHERE order_id = ? ORDER BY id ASC',
     [order.id]
   );
+  const [mechanicRows] = await db.query('SELECT * FROM work_order_mechanic_data WHERE order_id = ?', [order.id]);
+  const mechanic = mechanicRows[0] || {};
+  const parseJson = (value) => {
+    try { return value ? JSON.parse(value) : []; } catch { return []; }
+  };
 
   return {
     id: order.id,
@@ -36,6 +41,17 @@ const mapOrder = async (order) => {
     services: services.map((service) => service.service_name),
     createdAt: order.created_at ? new Date(order.created_at).toLocaleDateString('es-CL') : '',
     nextMaintenance: order.next_maintenance || 'Por definir',
+    quoteStatus: order.quote_status || 'pendiente',
+    assignedMechanic: mechanic.assigned_mechanic || '',
+    diagnosis: mechanic.diagnosis || '',
+    observations: mechanic.observations || '',
+    failures: parseJson(mechanic.failures),
+    repairs: parseJson(mechanic.repairs),
+    parts: parseJson(mechanic.parts),
+    laborHours: Number(mechanic.labor_hours) || 0,
+    tests: parseJson(mechanic.tests),
+    cost: Number(mechanic.cost) || 0,
+    evidence: parseJson(mechanic.evidence),
   };
 };
 
@@ -88,6 +104,20 @@ app.post('/api/users', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Error al crear usuario', error: error.message });
+  }
+});
+
+app.patch('/api/users/:id', async (req, res) => {
+  try {
+    const { name, email } = req.body;
+    if (!name || !email) return res.status(400).json({ message: 'Nombre y correo son obligatorios' });
+    await db.query('UPDATE users SET name = ?, email = ? WHERE id = ?', [name.trim(), email.trim().toLowerCase(), req.params.id]);
+    const [rows] = await db.query('SELECT * FROM users WHERE id = ?', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ message: 'Usuario no encontrado' });
+    const user = rows[0];
+    res.json({ id: user.id, name: user.name, email: user.email, password: user.password, role: user.role });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al actualizar perfil', error: error.message });
   }
 });
 
@@ -237,6 +267,46 @@ app.patch('/api/orders/:id/status', async (req, res) => {
     res.json(await mapOrder(rows[0]));
   } catch (error) {
     res.status(500).json({ message: 'Error al actualizar estado', error: error.message });
+  }
+});
+
+app.patch('/api/orders/:id/quote', async (req, res) => {
+  try {
+    const { quoteStatus } = req.body;
+    if (!['pendiente', 'aprobado', 'rechazado'].includes(quoteStatus)) return res.status(400).json({ message: 'Respuesta de presupuesto inválida' });
+    await db.query('UPDATE work_orders SET quote_status = ? WHERE id = ?', [quoteStatus, req.params.id]);
+    const [rows] = await db.query('SELECT * FROM work_orders WHERE id = ?', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ message: 'Orden no encontrada' });
+    res.json(await mapOrder(rows[0]));
+  } catch (error) {
+    res.status(500).json({ message: 'Error al responder el presupuesto', error: error.message });
+  }
+});
+
+app.patch('/api/orders/:id/mechanic-data', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      assignedMechanic = '', diagnosis = '', observations = '', failures = [], repairs = [],
+      parts = [], laborHours = 0, tests = [], cost = 0, evidence = []
+    } = req.body;
+
+    await db.query(
+      `INSERT INTO work_order_mechanic_data
+        (order_id, assigned_mechanic, diagnosis, observations, failures, repairs, parts, labor_hours, tests, cost, evidence)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+        assigned_mechanic = VALUES(assigned_mechanic), diagnosis = VALUES(diagnosis), observations = VALUES(observations),
+        failures = VALUES(failures), repairs = VALUES(repairs), parts = VALUES(parts), labor_hours = VALUES(labor_hours),
+        tests = VALUES(tests), cost = VALUES(cost), evidence = VALUES(evidence)`,
+      [id, assignedMechanic, diagnosis, observations, JSON.stringify(failures), JSON.stringify(repairs), JSON.stringify(parts), Number(laborHours) || 0, JSON.stringify(tests), Number(cost) || 0, JSON.stringify(evidence)]
+    );
+
+    const [rows] = await db.query('SELECT * FROM work_orders WHERE id = ?', [id]);
+    if (!rows.length) return res.status(404).json({ message: 'Orden no encontrada' });
+    res.json(await mapOrder(rows[0]));
+  } catch (error) {
+    res.status(500).json({ message: 'Error al guardar la ficha mecánica', error: error.message });
   }
 });
 

@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS `work_orders` (
   `status` ENUM('recibido', 'diagnóstico', 'reparación', 'listo') NOT NULL DEFAULT 'recibido',
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `next_maintenance` VARCHAR(50) NOT NULL DEFAULT 'Por definir',
+  `quote_status` ENUM('pendiente', 'aprobado', 'rechazado') NOT NULL DEFAULT 'pendiente',
   PRIMARY KEY (`id`),
   KEY `idx_work_orders_client_id` (`client_id`),
   KEY `idx_work_orders_vehicle_id` (`vehicle_id`),
@@ -47,6 +48,22 @@ CREATE TABLE IF NOT EXISTS `work_order_services` (
   PRIMARY KEY (`id`),
   KEY `idx_work_order_services_order_id` (`order_id`),
   CONSTRAINT `fk_work_order_services_orders` FOREIGN KEY (`order_id`) REFERENCES `work_orders` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `work_order_mechanic_data` (
+  `order_id` INT NOT NULL,
+  `assigned_mechanic` VARCHAR(120) NULL,
+  `diagnosis` TEXT NULL,
+  `observations` TEXT NULL,
+  `failures` JSON NULL,
+  `repairs` JSON NULL,
+  `parts` JSON NULL,
+  `labor_hours` DECIMAL(6,2) NOT NULL DEFAULT 0,
+  `tests` JSON NULL,
+  `cost` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `evidence` JSON NULL,
+  PRIMARY KEY (`order_id`),
+  CONSTRAINT `fk_mechanic_data_orders` FOREIGN KEY (`order_id`) REFERENCES `work_orders` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO `users` (`id`, `name`, `email`, `password`, `role`) VALUES

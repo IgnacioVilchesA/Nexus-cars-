@@ -1,5 +1,6 @@
 export type UserRole = 'admin' | 'cliente';
 export type WorkOrderStatus = 'recibido' | 'diagnóstico' | 'reparación' | 'listo';
+export type QuoteStatus = 'pendiente' | 'aprobado' | 'rechazado';
 
 export interface User {
   id: number;
@@ -28,4 +29,15 @@ export interface WorkOrder {
   services: string[];
   createdAt: string;
   nextMaintenance: string;
+  quoteStatus?: QuoteStatus;
+  assignedMechanic?: string;
+  diagnosis?: string;
+  observations?: string;
+  failures?: string[];
+  repairs?: string[];
+  parts?: string[];
+  laborHours?: number;
+  tests?: string[];
+  cost?: number;
+  evidence?: string[];
 }
