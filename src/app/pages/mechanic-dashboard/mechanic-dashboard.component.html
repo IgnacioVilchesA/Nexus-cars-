@@ -1,0 +1,171 @@
+<main class="dashboard">
+    <header class="topbar">
+        <a class="brand" href="/"><span class="brand-mark">NC</span><strong>Nexus Cars</strong></a>
+        <div class="user-area"><span>Mecánico</span><button (click)="logout()">Cerrar sesión</button></div>
+    </header>
+
+    <div class="container content">
+
+        <div class="hero">
+            <div class="hero-text">
+                <h1>Centro del mecánico</h1>
+                <p>Inspecciona vehículos, documenta reparaciones y cierra órdenes con trazabilidad.</p>
+            </div>
+            <div class="gauges">
+                <div class="gauge"><div class="gauge-face"><strong>{{ workshop.vehicles().length }}</strong></div><span>Vehículos</span></div>
+                <div class="gauge"><div class="gauge-face"><strong>{{ workshop.orders().length }}</strong></div><span>Órdenes</span></div>
+                <div class="gauge"><div class="gauge-face"><strong>{{ activeOrders }}</strong></div><span>En curso</span></div>
+            </div>
+        </div>
+
+        <section class="panel intake-tray">
+            <div class="section-title"><h2>Solicitudes pendientes</h2></div>
+            <div class="filters-rail">
+                <label>Estado<select [(ngModel)]="statusFilter"><option value="todos">Todos</option><option *ngFor="let status of statuses" [ngValue]="status">{{ status | titlecase }}</option></select></label>
+                <label>Fecha<input [(ngModel)]="dateFilter" placeholder="dd-mm-yyyy" /></label>
+                <label>Cliente<input [(ngModel)]="clientFilter" placeholder="Nombre cliente" /></label>
+                <label>Patente<input [(ngModel)]="plateFilter" placeholder="ABC-123" /></label>
+                <label>Marca<input [(ngModel)]="brandFilter" placeholder="Mazda" /></label>
+                <label>Servicio<input [(ngModel)]="serviceFilter" placeholder="Diagnóstico" /></label>
+            </div>
+
+            <div class="ticket-rack">
+                <article class="ticket" *ngFor="let order of filteredOrders">
+                    <div class="ticket-stub">
+                        <span class="ticket-id">#{{ order.id }}</span>
+                        <strong class="ticket-status" [attr.data-status]="order.status">{{ order.status | titlecase }}</strong>
+                    </div>
+                    <div class="ticket-body">
+                        <div><small>Cliente</small><p>{{ clientNameById(order.clientId) }}</p></div>
+                        <div><small>Vehículo</small><p>{{ vehicleLabel(order.vehicleId) }}</p></div>
+                        <div><small>Patente</small><p>{{ vehiclePlateByOrder(order.vehicleId) }}</p></div>
+                        <div><small>Servicio</small><p>{{ order.services.join(', ') || 'Sin servicio' }}</p></div>
+                        <div class="wide"><small>Descripción</small><p>{{ order.description }}</p></div>
+                        <div><small>Ingreso</small><p>{{ order.createdAt }}</p></div>
+                    </div>
+                    <div class="ticket-actions">
+                        <button class="ghost-button" (click)="selectOrder(order)">Ver detalle</button>
+                        <button class="primary-button" *ngIf="order.status === 'solicitada'" (click)="acceptRequest(order)">Aceptar solicitud</button>
+                        <button class="primary-button" *ngIf="order.status === 'recibido'" (click)="changeOrderStatus(order, 'diagnóstico')">Enviar a diagnóstico</button>
+                        <button class="primary-button" *ngIf="order.status === 'diagnóstico'" (click)="changeOrderStatus(order, 'reparación')">Iniciar reparación</button>
+                    </div>
+                </article>
+                <p class="empty" *ngIf="!filteredOrders.length">No hay solicitudes con los filtros actuales.</p>
+            </div>
+            <small class="alert" *ngIf="statusMessage">{{ statusMessage }}</small>
+        </section>
+
+        <section class="workspace-grid">
+            <div class="panel vehicle-panel">
+                <div class="section-title"><h2>Vehículos</h2><span class="count">{{ workshop.vehicles().length }} unidades</span></div>
+                <div class="shelf">
+                    <button class="shelf-item" *ngFor="let vehicle of workshop.vehicles()" [class.selected]="selectedVehicleId === vehicle.id" (click)="selectVehicle(vehicle.id)">
+                        <span class="bin-tag">{{ vehicle.type === 'Moto' ? 'M' : 'A' }}-{{ vehicle.id }}</span>
+                        <span class="shelf-info"><strong>{{ vehicle.brand }} {{ vehicle.model }}</strong><small>{{ vehicle.plate }} · {{ vehicle.year }}</small></span>
+                    </button>
+                </div>
+                <form class="intake-form" (ngSubmit)="registerVehicle()">
+                    <h3>Registrar vehículo</h3>
+                    <select name="vehicleOwner" [(ngModel)]="vehicleOwner"><option [ngValue]="client.id" *ngFor="let client of clients">{{ client.name }}</option></select>
+                    <div class="two"><input name="vehicleBrand" [(ngModel)]="vehicleBrand" required placeholder="Marca" /><input name="vehicleModel" [(ngModel)]="vehicleModel" required placeholder="Modelo" /></div>
+                    <div class="two"><input name="vehiclePlate" [(ngModel)]="vehiclePlate" required placeholder="Patente" /><select name="vehicleType" [(ngModel)]="vehicleType"><option value="Auto">Auto</option><option value="Moto">Moto</option></select></div>
+                    <button>Agregar vehículo +</button>
+                </form>
+            </div>
+
+            <div class="panel vehicle-detail" *ngIf="selectedVehicle as vehicle; else vehicleEmpty">
+                <div class="plate">
+                    <h2>{{ vehicle.brand }} {{ vehicle.model }}</h2>
+                    <p class="muted">{{ vehicle.plate }} · {{ vehicle.type }} · {{ vehicle.year }}</p>
+                </div>
+                <div class="vehicle-facts"><div><span>Propietario</span><strong>{{ clientNameById(vehicle.ownerId) }}</strong></div><div><span>Órdenes históricas</span><strong>{{ vehicleHistory.length }}</strong></div></div>
+                <h3>Historial de trabajos</h3>
+                <div class="history-list">
+                    <button *ngFor="let order of vehicleHistory" (click)="selectOrder(order)"><span>#{{ order.id }}</span><strong>{{ order.description }}</strong><small>{{ order.createdAt }} · {{ order.status | titlecase }}</small></button>
+                    <p class="empty" *ngIf="!vehicleHistory.length">No hay trabajos registrados para este vehículo.</p>
+                </div>
+            </div>
+            <ng-template #vehicleEmpty>
+                <div class="panel empty-state">
+                    <svg class="large-icon" width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 13l1.6-5.2A2 2 0 0 1 6.5 6.4h11a2 2 0 0 1 1.9 1.4L21 13"/><path d="M3 13h18v4a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H6v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4Z"/><circle cx="7.5" cy="17" r="1.2"/><circle cx="16.5" cy="17" r="1.2"/></svg>
+                    <h2>Selecciona un vehículo</h2>
+                    <p>Consulta sus datos, historial y órdenes de trabajo.</p>
+                </div>
+            </ng-template>
+        </section>
+
+        <section class="panel orders">
+            <div class="section-title">
+                <h2>Órdenes de trabajo</h2>
+                <form class="quick-add" (ngSubmit)="addService()">
+                    <select name="selectedOrder" [(ngModel)]="selectedOrder"><option [ngValue]="0">Orden</option><option [ngValue]="order.id" *ngFor="let order of workshop.orders()">#{{ order.id }}</option></select>
+                    <input name="newService" [(ngModel)]="newService" placeholder="Trabajo realizado" />
+                    <button type="submit">Agregar trabajo +</button>
+                </form>
+            </div>
+            <div class="board">
+                <article class="job-row" *ngFor="let order of workshop.orders()" [class.active]="selectedOrderId === order.id">
+                    <button class="job-select" (click)="selectOrder(order)">
+                        <span class="order-id">#{{ order.id }}</span>
+                        <h3>{{ vehicleLabel(order.vehicleId) }}</h3>
+                        <p>{{ clientNameById(order.clientId) }} · {{ order.description }}</p>
+                        <div class="tags"><span *ngFor="let service of order.services">{{ service }}</span></div>
+                    </button>
+                    <div class="job-meta">
+                        <label>Estado<select [ngModel]="order.status" (ngModelChange)="changeOrderStatus(order, $event)"><option *ngFor="let status of statuses" [ngValue]="status">{{ status | titlecase }}</option></select></label>
+                        <button class="ghost-button" (click)="selectOrder(order)">Editar ficha</button>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="panel job-card" *ngIf="activeOrder as order">
+            <div class="section-title">
+                <div>
+                    <h2>Documentar reparación</h2>
+                    <p class="muted">Orden #{{ order.id }} · {{ vehicleLabel(order.vehicleId) }} · {{ order.description }}</p>
+                </div>
+                <button class="finish-button" (click)="markFinished()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12.5l5 5L20 6"/></svg>
+                    Marcar terminada
+                </button>
+            </div>
+            <div class="carbon-grid">
+                <label>Asignar mecánico<input name="mechanicName" [(ngModel)]="mechanicName" placeholder="Nombre del mecánico" /></label>
+                <label>Horas de trabajo<input name="laborHours" type="number" min="0" step="0.5" [(ngModel)]="laborHours" /></label>
+                <label>Diagnóstico<textarea name="diagnosis" [(ngModel)]="diagnosis" placeholder="Resultado de la inspección..."></textarea></label>
+                <label>Fallas encontradas<textarea name="failuresText" [(ngModel)]="failuresText" placeholder="Una falla por línea"></textarea></label>
+                <label>Trabajos realizados<textarea name="repairsText" [(ngModel)]="repairsText" placeholder="Una reparación por línea"></textarea></label>
+                <label>Repuestos utilizados<textarea name="partsText" [(ngModel)]="partsText" placeholder="Un repuesto por línea"></textarea></label>
+                <label>Pruebas realizadas<textarea name="testsText" [(ngModel)]="testsText" placeholder="Una prueba por línea"></textarea></label>
+                <label class="wide">Observaciones<textarea name="observations" [(ngModel)]="observations" placeholder="Notas para el cliente o el siguiente turno..."></textarea></label>
+                <label class="wide">Evidencias / fotos<input type="file" accept="image/*" multiple (change)="addEvidenceFiles($event)" /><textarea name="evidenceText" [(ngModel)]="evidenceText" placeholder="Pega una URL de foto por línea o selecciona imágenes"></textarea></label>
+            </div>
+            <div class="receipt">
+                <h3>Presupuesto</h3>
+                <div class="receipt-grid">
+                    <label>Costo de repuestos<input type="number" min="0" [(ngModel)]="partsCost" /></label>
+                    <label>Costo de mano de obra<input type="number" min="0" [(ngModel)]="laborCost" /></label>
+                    <label>Cantidad de horas<input type="number" min="0" step="0.5" [(ngModel)]="quoteHours" /></label>
+                    <label>Otros costos<input type="number" min="0" [(ngModel)]="otherCosts" /></label>
+                    <label class="total">Total final<input type="number" [ngModel]="getQuoteTotal()" disabled /></label>
+                </div>
+            </div>
+            <div class="evidence-preview" *ngIf="order.evidence?.length"><img *ngFor="let photo of order.evidence" [src]="photo" alt="Evidencia de reparación" /></div>
+            <button class="save-button" (click)="saveMechanicData()">Guardar ficha de reparación</button>
+        </section>
+
+        <section class="panel create-order">
+            <h2>Abrir orden de trabajo</h2>
+            <form (ngSubmit)="createOrder()">
+                <div class="two">
+                    <select name="orderClient" [(ngModel)]="orderClient"><option [ngValue]="client.id" *ngFor="let client of clients">{{ client.name }}</option></select>
+                    <select name="orderVehicle" [(ngModel)]="orderVehicle"><option [ngValue]="vehicle.id" *ngFor="let vehicle of workshop.vehicles()">{{ vehicle.brand }} {{ vehicle.model }}</option></select>
+                </div>
+                <input name="orderDescription" [(ngModel)]="orderDescription" required placeholder="Motivo de ingreso del vehículo" />
+                <button>Crear orden +</button>
+            </form>
+        </section>
+
+    </div>
+</main>

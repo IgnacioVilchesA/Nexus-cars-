@@ -18,6 +18,10 @@ export class ClientDashboardComponent {
   selectedOrderId = 0;
   profileMessage = '';
   vehicleMessage = '';
+  requestVehicleId = 0;
+  requestDescription = '';
+  requestService = 'Diagnóstico general';
+  requestMessage = '';
   constructor(public workshop: WorkshopService, private readonly router: Router) { }
   get user() { return this.workshop.currentUser(); }
   get firstName(): string { return this.user?.name?.split(' ').at(0) || ''; }
@@ -33,7 +37,7 @@ export class ClientDashboardComponent {
   get nextMaintenance(): string { return this.orders.find((order) => order.nextMaintenance && order.nextMaintenance !== 'Por definir')?.nextMaintenance || 'Por definir'; }
   get activeVehicles(): number { return this.vehicles.filter((vehicle) => this.orders.some((order) => order.vehicleId === vehicle.id && order.status !== 'listo')).length; }
   get orderProgress(): number {
-    const progress: Record<string, number> = { recibido: 25, diagnóstico: 50, reparación: 75, listo: 100 };
+    const progress: Record<string, number> = { solicitada: 10, recibido: 25, diagnóstico: 50, reparación: 75, listo: 100 };
     return this.selectedOrder ? progress[this.selectedOrder.status] : 0;
   }
   get quoteStatusLabel(): string {
@@ -57,6 +61,20 @@ export class ClientDashboardComponent {
     this.workshop.addVehicle({ ownerId: user.id, type: this.vehicleType, brand: this.vehicleBrand.trim(), model: this.vehicleModel.trim(), plate: this.vehiclePlate.trim().toUpperCase(), year: Number(this.vehicleYear) });
     this.vehicleBrand = ''; this.vehicleModel = ''; this.vehiclePlate = ''; this.vehicleYear = new Date().getFullYear();
     this.vehicleMessage = 'Vehículo registrado correctamente';
+  }
+  requestServiceOrder(): void {
+    const user = this.user;
+    if (!user || !this.requestVehicleId || !this.requestDescription.trim()) return;
+    this.workshop.addOrder({
+      clientId: user.id,
+      vehicleId: Number(this.requestVehicleId),
+      description: this.requestDescription.trim(),
+      status: 'solicitada',
+      services: [this.requestService],
+      nextMaintenance: 'Por definir'
+    });
+    this.requestDescription = '';
+    this.requestMessage = 'Solicitud enviada. El mecánico revisará tu vehículo.';
   }
   respondToQuote(status: QuoteStatus): void {
     if (this.selectedOrder) this.workshop.respondToQuote(this.selectedOrder.id, status);

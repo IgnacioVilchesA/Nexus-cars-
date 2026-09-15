@@ -1,5 +1,5 @@
-export type UserRole = 'admin' | 'cliente';
-export type WorkOrderStatus = 'recibido' | 'diagnóstico' | 'reparación' | 'listo';
+export type UserRole = 'admin' | 'mecanico' | 'cliente';
+export type WorkOrderStatus = 'solicitada' | 'recibido' | 'diagnóstico' | 'reparación' | 'listo';
 export type QuoteStatus = 'pendiente' | 'aprobado' | 'rechazado';
 
 export interface User {
@@ -40,4 +40,13 @@ export interface WorkOrder {
   tests?: string[];
   cost?: number;
   evidence?: string[];
+  partsCost?: number;
+  laborCost?: number;
+  otherCosts?: number;
+  quoteHours?: number;
+  quoteTotal?: number;
+  notifications?: string[];
+  nextMaintenanceDate?: string;
+  recommendedMileage?: number;
+  recommendedNotes?: string;
 }

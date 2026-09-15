@@ -22,7 +22,8 @@ export class LoginComponent {
   constructor(private readonly workshop: WorkshopService, private readonly router: Router) {
     const user = this.workshop.currentUser();
     if (user) {
-      this.router.navigate([user.role === 'admin' ? '/admin' : '/cliente']);
+      const target = user.role === 'admin' ? '/admin' : user.role === 'mecanico' ? '/mecanico' : '/cliente';
+      this.router.navigate([target]);
     }
   }
 
@@ -41,7 +42,8 @@ export class LoginComponent {
       this.submitted = true;
 
       if (user) {
-        this.router.navigate([user.role === 'admin' ? '/admin' : '/cliente']);
+        const target = user.role === 'admin' ? '/admin' : user.role === 'mecanico' ? '/mecanico' : '/cliente';
+        this.router.navigate([target]);
       } else {
         this.errorMessage = error || 'El correo o la contraseña no son correctos.';
       }

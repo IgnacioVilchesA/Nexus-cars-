@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS `work_orders` (
   `client_id` INT NOT NULL,
   `vehicle_id` INT NOT NULL,
   `description` TEXT NOT NULL,
-  `status` ENUM('recibido', 'diagnóstico', 'reparación', 'listo') NOT NULL DEFAULT 'recibido',
+  `status` ENUM('solicitada', 'recibido', 'diagnóstico', 'reparación', 'listo') NOT NULL DEFAULT 'solicitada',
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `next_maintenance` VARCHAR(50) NOT NULL DEFAULT 'Por definir',
   `quote_status` ENUM('pendiente', 'aprobado', 'rechazado') NOT NULL DEFAULT 'pendiente',
@@ -65,6 +65,9 @@ CREATE TABLE IF NOT EXISTS `work_order_mechanic_data` (
   PRIMARY KEY (`order_id`),
   CONSTRAINT `fk_mechanic_data_orders` FOREIGN KEY (`order_id`) REFERENCES `work_orders` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE `work_orders`
+  MODIFY COLUMN `status` ENUM('solicitada', 'recibido', 'diagnóstico', 'reparación', 'listo') NOT NULL DEFAULT 'solicitada';
 
 INSERT INTO `users` (`id`, `name`, `email`, `password`, `role`) VALUES
   (1, 'Administrador Nexus', 'admin@nexuscars.cl', 'admin123', 'admin'),

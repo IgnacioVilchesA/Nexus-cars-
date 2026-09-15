@@ -87,9 +87,10 @@ app.post('/api/users', async (req, res) => {
       return res.status(400).json({ message: 'Faltan campos obligatorios' });
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
     const [result] = await db.query(
       'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
-      [name, email.trim().toLowerCase(), password, role]
+      [name.trim(), normalizedEmail, password, role]
     );
 
     const [rows] = await db.query('SELECT * FROM users WHERE id = ?', [result.insertId]);
@@ -103,6 +104,7 @@ app.post('/api/users', async (req, res) => {
       role: user.role,
     });
   } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: 'Ya existe una cuenta con ese correo' });
     res.status(500).json({ message: 'Error al crear usuario', error: error.message });
   }
 });
@@ -219,7 +221,7 @@ app.post('/api/orders', async (req, res) => {
       clientId,
       vehicleId,
       description,
-      status = 'recibido',
+      status = 'solicitada',
       services = [],
       nextMaintenance = 'Por definir',
     } = req.body;
