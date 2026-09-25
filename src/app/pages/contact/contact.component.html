@@ -1,0 +1,97 @@
+<app-navbar />
+
+<main class="detail-page">
+  <section class="page-intro">
+    <div class="container">
+      <p class="eyebrow"><span></span> Hablemos</p>
+      <h1>Estamos listos <em>para ayudarte.</em></h1>
+      <p class="lead">Cuéntanos qué necesita tu vehículo y coordinemos una atención.</p>
+    </div>
+  </section>
+
+  <section class="content-section contact-overview-section">
+    <div class="container contact-grid">
+      <div class="contact-intro">
+        <h2>Visítanos o <em>escríbenos.</em></h2>
+        <p>Te responderemos para confirmar el diagnóstico inicial y el horario más conveniente.</p>
+        <span class="response-note"><i></i> Respondemos durante el horario de atención</span>
+      </div>
+      <div class="contact-details">
+        <div class="contact-detail"><span class="detail-label">Visítanos</span><strong>Av. Las Industrias 1840<br />Santiago, Chile</strong></div>
+        <div class="contact-detail"><span class="detail-label">Llámanos</span><strong>+56 9 5555 0184</strong></div>
+        <div class="contact-detail"><span class="detail-label">Escríbenos</span><strong>hola&#64;torquenorte.cl</strong></div>
+        <div class="contact-detail"><span class="detail-label">Horario</span><strong>Lun–Vie 08:30–18:30<br />Sáb 09:00–14:00</strong></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="content-section form-section">
+    <div class="container panels-grid">
+
+      <form class="panel form-panel" (ngSubmit)="onSubmit()" novalidate>
+        <span class="detail-label">Formulario de contacto</span>
+        <h3>Cuéntanos tu caso</h3>
+
+        <div class="form-row">
+          <div class="field">
+            <label for="nombre">Nombre</label>
+            <input id="nombre" name="nombre" type="text" [(ngModel)]="form.nombre" (ngModelChange)="saveDraft()" (blur)="markTouched('nombre')" [class.field-error]="isFieldInvalid('nombre')" placeholder="Tu nombre" required />
+            @if (getError('nombre')) { <small class="error-message">{{ getError('nombre') }}</small> }
+          </div>
+          <div class="field">
+            <label for="apellido">Apellido</label>
+            <input id="apellido" name="apellido" type="text" [(ngModel)]="form.apellido" (ngModelChange)="saveDraft()" (blur)="markTouched('apellido')" [class.field-error]="isFieldInvalid('apellido')" placeholder="Tu apellido" required />
+            @if (getError('apellido')) { <small class="error-message">{{ getError('apellido') }}</small> }
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="correo">Correo electrónico</label>
+          <input id="correo" name="correo" type="email" [(ngModel)]="form.correo" (ngModelChange)="saveDraft()" (blur)="markTouched('correo')" [class.field-error]="isFieldInvalid('correo')" placeholder="tucorreo@ejemplo.cl" required />
+          @if (getError('correo')) { <small class="error-message">{{ getError('correo') }}</small> }
+        </div>
+
+        <div class="field">
+          <label for="tipoSolicitud">Tipo de solicitud</label>
+          <select id="tipoSolicitud" name="tipoSolicitud" [(ngModel)]="form.tipoSolicitud" (ngModelChange)="saveDraft()" (blur)="markTouched('tipoSolicitud')" [class.field-error]="isFieldInvalid('tipoSolicitud')" required>
+            <option value="" disabled selected>Selecciona una opción</option>
+            <option value="diagnostico">Diagnóstico general</option>
+            <option value="mantencion">Mantención preventiva</option>
+            <option value="reparacion">Reparación mecánica</option>
+            <option value="electricidad">Falla eléctrica / electrónica</option>
+            <option value="cotizacion">Cotización de servicio</option>
+            <option value="reclamo">Reclamo o garantía</option>
+            <option value="otro">Otro</option>
+          </select>
+          @if (getError('tipoSolicitud')) { <small class="error-message">{{ getError('tipoSolicitud') }}</small> }
+        </div>
+
+        <div class="field">
+          <label for="mensaje">Mensaje</label>
+          <textarea id="mensaje" name="mensaje" rows="4" [(ngModel)]="form.mensaje" (ngModelChange)="saveDraft()" (blur)="markTouched('mensaje')" [class.field-error]="isFieldInvalid('mensaje')" placeholder="Cuéntanos qué le pasa a tu vehículo"></textarea>
+          @if (getError('mensaje')) { <small class="error-message">{{ getError('mensaje') }}</small> }
+        </div>
+
+        @if (successMessage) { <p class="success-message" role="status">{{ successMessage }}</p> }
+        <button type="submit" class="button button-primary">Enviar <span>↗</span></button>
+      </form>
+
+      <a class="panel whatsapp-panel" href="https://wa.me/56955550184" target="_blank" rel="noopener">
+        <span class="detail-label">Respuesta rápida</span>
+        <div class="whatsapp-icon" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 4c6.627 0 12 5.373 12 12 0 6.628-5.373 12-12 12-2.09 0-4.06-.535-5.774-1.475L4 28l1.548-6.043A11.94 11.94 0 0 1 4 16C4 9.373 9.373 4 16 4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M11 13.5c0-.828.672-1.5 1.5-1.5h1c.5 0 .95.31 1.13.78l.62 1.62a1.2 1.2 0 0 1-.27 1.28l-.7.7a7 7 0 0 0 3.34 3.34l.7-.7a1.2 1.2 0 0 1 1.28-.27l1.62.62c.47.18.78.63.78 1.13v1c0 .828-.672 1.5-1.5 1.5C15.4 23 9 16.6 9 8.5" stroke="currentColor" stroke-width="0" fill="none"/>
+            <path d="M12.5 12a1.5 1.5 0 0 1 1.42 1.02l.6 1.78a1.2 1.2 0 0 1-.3 1.24l-.75.75a6.98 6.98 0 0 0 3.44 3.44l.75-.75a1.2 1.2 0 0 1 1.24-.3l1.78.6A1.5 1.5 0 0 1 22 21.42v1.08a1.5 1.5 0 0 1-1.62 1.5C14.7 23.5 8.5 17.3 8 11.62A1.5 1.5 0 0 1 9.5 10h1a1.5 1.5 0 0 1 1.5 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3>Escríbenos por WhatsApp</h3>
+        <p>Respuesta en minutos, en horario de atención.</p>
+        <strong>+56 9 5555 0184 ↗</strong>
+      </a>
+
+    </div>
+  </section>
+</main>
+
+<app-footer />

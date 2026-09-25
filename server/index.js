@@ -345,6 +345,6 @@ app.post('/api/orders/:id/services', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor API corriendo en http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor API corriendo en http://0.0.0.0:${PORT}`);
 });

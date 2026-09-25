@@ -12,9 +12,9 @@
     <div class="nav-content" [class.is-open]="menuOpen">
       <div class="nav-links">
         <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeMenu()">Inicio</a>
-        <a href="/#servicios" (click)="closeMenu()">Servicios</a>
-        <a href="/#nosotros" (click)="closeMenu()">Nosotros</a>
-        <a href="/#contacto" (click)="closeMenu()">Contacto</a>
+        <a routerLink="/servicios" routerLinkActive="active" (click)="closeMenu()">Servicios</a>
+        <a routerLink="/nosotros" routerLinkActive="active" (click)="closeMenu()">Nosotros</a>
+        <a routerLink="/contacto" routerLinkActive="active" (click)="closeMenu()">Contacto</a>
       </div>
       <a class="nav-login" routerLink="/login" (click)="closeMenu()">
         <span aria-hidden="true">&#8594;</span> Iniciar sesión

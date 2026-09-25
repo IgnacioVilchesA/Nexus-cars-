@@ -21,10 +21,10 @@
 .nav-links a::after { position: absolute; right: 0; bottom: -9px; left: 0; height: 2px; background: var(--yellow); content: ''; transform: scaleX(0); transition: transform .2s ease; }
 .nav-links a:hover, .nav-links a.active { color: var(--ink); }
 .nav-links a:hover::after, .nav-links a.active::after { transform: scaleX(1); }
-.nav-login { display: inline-flex; align-items: center; gap: 8px; padding: 12px 17px; border: 1px solid var(--line); color: var(--ink); font-size: .82rem; font-weight: 800; text-decoration: none; transition: background .2s ease, border-color .2s ease; }
+.nav-login { display: inline-flex; align-items: center; gap: 8px; padding: 12px 17px; border: 1px solid var(--line); color: var(--ink); font-size: .82rem; font-weight: 800; text-decoration: none; transition: background .2s ease, border-color .2s ease, color .2s ease; }
 .nav-login:hover { border-color: var(--yellow); background: var(--yellow); }
 .nav-login span { color: var(--yellow-deep); font-size: 1.2rem; line-height: 0; }
-.menu-toggle { display: none; border: 0; background: transparent; cursor: pointer; }
+.menu-toggle { display: none; border: 0; background: transparent; cursor: pointer; box-shadow: none; }
 .menu-toggle span { display: block; width: 24px; height: 2px; margin: 5px; background: var(--ink); }
 
 @media (max-width: 760px) {

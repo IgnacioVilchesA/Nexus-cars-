@@ -1,0 +1,32 @@
+<app-navbar />
+
+<main class="detail-page">
+  <section class="page-intro">
+    <div class="container">
+      <p class="eyebrow"><span></span> Nuestra diferencia</p>
+      <h1>Más que un taller, <em>tu aliado en la ruta.</em></h1>
+      <p class="lead">Trabajamos con honestidad, experiencia y explicaciones claras para que tomes decisiones con confianza.</p>
+    </div>
+  </section>
+
+  <section class="content-section">
+    <div class="container about-grid">
+      <div>
+        <h2>Un equipo que cuida <em>lo que te mueve.</em></h2>
+        <p>En Nexus Cars creemos en hacer bien el trabajo y en contarte por qué. Revisamos cada vehículo con atención, proponemos solo lo necesario y te acompañamos hasta que vuelvas a la ruta.</p>
+        <a class="button button-primary" routerLink="/contacto">Conocer nuestro taller <span>↗</span></a>
+      </div>
+      <div class="benefits-grid">
+        @for (benefit of benefits; track benefit.number) {
+          <article class="benefit">
+            <span class="benefit-number">{{ benefit.number }}</span>
+            <h3>{{ benefit.title }}</h3>
+            <p>{{ benefit.text }}</p>
+          </article>
+        }
+      </div>
+    </div>
+  </section>
+</main>
+
+<app-footer />

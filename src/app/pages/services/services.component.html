@@ -1,0 +1,38 @@
+<app-navbar />
+
+<main class="detail-page">
+  <section class="page-intro">
+    <div class="container">
+      <p class="eyebrow"><span></span> Lo que hacemos</p>
+      <h1>Servicios para <em>seguir avanzando.</em></h1>
+      <p class="lead">Soluciones claras para cuidar tu auto o tu moto, desde una mantención de rutina hasta una reparación compleja.</p>
+      <div class="service-metrics" aria-label="Información del servicio">
+        <span><strong>06</strong> especialidades</span>
+        <span><strong>12+</strong> años de experiencia</span>
+        <span><strong>24/7</strong> seguimiento online</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="content-section">
+    <div class="container">
+      <div class="section-intro">
+        <div>
+          <span class="section-kicker">Atención especializada</span>
+          <h2>Lo necesario para<br /><em>volver a la ruta.</em></h2>
+        </div>
+        <p>Diagnóstico, reparación y mantención con explicaciones simples en cada etapa.</p>
+      </div>
+      <div class="services-grid">
+        @for (service of services; track service.title) {
+          <app-service-card [icon]="service.icon" [title]="service.title" [description]="service.description" />
+        }
+      </div>
+      <div class="page-action">
+        <a class="button button-primary" routerLink="/contacto">Solicitar atención <span>↗</span></a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<app-footer />

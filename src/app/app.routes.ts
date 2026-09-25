@@ -5,10 +5,16 @@ import { AdminDashboardComponent } from './pages/admin-dashboard/admin-dashboard
 import { ClientDashboardComponent } from './pages/client-dashboard/client-dashboard.component';
 import { RegisterComponent } from './pages/register/register.component';
 import { MechanicDashboardComponent } from './pages/mechanic-dashboard/mechanic-dashboard.component';
+import { ServicesComponent } from './pages/services/services.component';
+import { AboutComponent } from './pages/about/about.component';
+import { ContactComponent } from './pages/contact/contact.component';
 import { roleGuard } from './core/guards/role.guard';
 
 export const routes: Routes = [
 	{ path: '', component: HomeComponent },
+	{ path: 'servicios', component: ServicesComponent },
+	{ path: 'nosotros', component: AboutComponent },
+	{ path: 'contacto', component: ContactComponent },
 	{ path: 'login', component: LoginComponent },
 	{ path: 'registro', component: RegisterComponent },
 	{ path: 'admin', component: AdminDashboardComponent, canActivate: [roleGuard('admin')] },
