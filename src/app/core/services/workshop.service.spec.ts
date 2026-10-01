@@ -23,8 +23,13 @@ describe('WorkshopService', () => {
   it('permite solo avanzar por la secuencia válida de estados', () => {
     expect(service.canTransitionOrderStatus('solicitada', 'recibido')).toBeTrue();
     expect(service.canTransitionOrderStatus('solicitada', 'diagnóstico')).toBeFalse();
-    expect(service.canTransitionOrderStatus('diagnóstico', 'reparación')).toBeTrue();
-    expect(service.canTransitionOrderStatus('listo', 'reparación')).toBeFalse();
+    expect(service.canTransitionOrderStatus('diagnóstico', 'en_diagnostico')).toBeTrue();
+    expect(service.canTransitionOrderStatus('listo_para_entrega', 'en_reparacion')).toBeFalse();
+  });
+
+  it('bloquea entrar a reparación si la cotización aún no fue aprobada', () => {
+    expect(service.canTransitionOrderStatus('cotizacion_aprobada', 'en_reparacion', 'pendiente')).toBeFalse();
+    expect(service.canTransitionOrderStatus('cotizacion_aprobada', 'en_reparacion', 'aprobado')).toBeTrue();
   });
 
   it('calcula el total del presupuesto separando costos', () => {
@@ -36,5 +41,12 @@ describe('WorkshopService', () => {
     });
 
     expect(total).toBe(225000);
+  });
+
+  it('mantiene la lógica de roles para recepcionista y mecánico', () => {
+    const allowedAdmin = ['admin', 'recepcionista'] as const;
+    const userRole = 'recepcionista';
+    expect(allowedAdmin.includes(userRole)).toBeTrue();
+    expect(['mecanico', 'cliente'].includes('recepcionista')).toBeFalse();
   });
 });

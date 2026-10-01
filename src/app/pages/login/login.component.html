@@ -39,7 +39,8 @@
 				@if (errorMessage) { <p class="form-error">{{ errorMessage }}</p> }
 			</form>
 
-			<p class="help-text">¿Aún no tienes una cuenta? <a routerLink="/registro">Regístrate aquí</a></p>
+			
 		</div>
 	</section>
+	<div class="password-modal" *ngIf="requirePasswordChange"><section><p class="eyebrow"><span></span> Seguridad de la cuenta</p><h2>Cambia tu contraseña temporal</h2><p>Por seguridad, debes definir una contraseña nueva antes de continuar.</p><label>Nueva contraseña<input type="password" [(ngModel)]="newPassword" minlength="8" autocomplete="new-password" /></label><label>Confirmar contraseña<input type="password" [(ngModel)]="confirmPassword" minlength="8" autocomplete="new-password" /></label><p class="form-error" *ngIf="passwordChangeError">{{passwordChangeError}}</p><button type="button" class="submit-button" [disabled]="loading" (click)="changeTemporaryPassword()">{{loading ? 'Guardando…' : 'Guardar y continuar'}} <span>→</span></button></section></div>
 </main>

@@ -1,0 +1,41 @@
+.logout {
+  border: 1px solid #dbe1e9;
+  background: #fff;
+  color: #c91e2d;
+  border-radius: 7px;
+  padding: 8px 10px;
+  font: 700 .72rem inherit;
+  cursor: pointer;
+}
+
+.logout:hover { background: #fff1f2; }
+
+.form-feedback {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: .78rem;
+}
+
+.form-feedback.error {
+  background: #fff0f1;
+  border: 1px solid #ffc3c9;
+  color: #b6202d;
+}
+
+.form-feedback strong { display: block; margin-bottom: 6px; }
+.form-feedback ul { margin: 0; padding-left: 18px; line-height: 1.55; }
+
+.success-modal { text-align: center; }
+.success-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: #e5f7ec;
+  color: #168a55;
+  font-size: 1.6rem;
+  font-weight: 900;
+}

@@ -1,27 +1,474 @@
 <main class="client-page">
-    <header class="topbar"><a class="brand" href="/"><span class="brand-mark">NC</span><strong>NEXUS CARS</strong></a><div class="user-area"><span>{{ user?.name || 'Cliente' }}</span><button (click)="logout()">Cerrar sesión</button></div></header>
-    <div class="container content">
-        <div class="welcome"><div><p class="eyebrow">Portal de clientes</p><h1>Hola{{ firstName ? ', ' + firstName : '' }}.</h1><p>Consulta el estado de tus vehículos y decide sobre tus presupuestos.</p></div><div class="account-status"><span class="status-dot"></span> Cuenta activa</div></div>
-
-        <section class="summary-grid"><div><span>Vehículos registrados</span><strong>{{ vehicles.length }}</strong><small>{{ activeVehicles }} con trabajo en curso</small></div><div><span>Historial de servicios</span><strong>{{ orders.length }}</strong><small>Órdenes asociadas a tu cuenta</small></div><div><span>Próxima mantención</span><strong>{{ nextMaintenance }}</strong><small>Recomendación del taller</small></div></section>
-
-        <section class="account-layout">
-            <div class="panel profile-panel"><div class="section-title"><div><p class="eyebrow">Mi cuenta</p><h2>Datos personales</h2></div><button class="ghost-button" type="button" (click)="startProfileEdit()">Editar datos</button></div><form (ngSubmit)="saveProfile()"><label>Nombre completo<input name="profileName" [(ngModel)]="profileName" [placeholder]="user?.name || 'Tu nombre'" required /></label><label>Correo electrónico<input name="profileEmail" type="email" [(ngModel)]="profileEmail" [placeholder]="user?.email || 'tu@email.com'" required /></label><button class="primary-button" type="submit">Guardar cambios</button><small class="message" *ngIf="profileMessage">{{ profileMessage }}</small></form></div>
-            <div class="panel register-panel"><div class="section-title"><div><p class="eyebrow">Tu garaje</p><h2>Registrar vehículo</h2></div><span class="panel-mark">+</span></div><form (ngSubmit)="registerVehicle()"><div class="form-row"><label>Marca<input name="vehicleBrand" [(ngModel)]="vehicleBrand" placeholder="Mazda" required /></label><label>Modelo<input name="vehicleModel" [(ngModel)]="vehicleModel" placeholder="CX-5" required /></label></div><div class="form-row"><label>Patente<input name="vehiclePlate" [(ngModel)]="vehiclePlate" placeholder="AA-BB-11" required /></label><label>Año<input name="vehicleYear" type="number" min="1900" [max]="maxVehicleYear" [(ngModel)]="vehicleYear" required /></label></div><label>Tipo<select name="vehicleType" [(ngModel)]="vehicleType"><option value="Auto">Auto</option><option value="Moto">Moto</option></select></label><button class="primary-button" type="submit">Agregar a mi garaje</button><small class="message" *ngIf="vehicleMessage">{{ vehicleMessage }}</small></form></div>
-        </section>
-
-        <section class="panel request-panel">
-            <div class="section-title"><div><p class="eyebrow">Nueva atención</p><h2>Solicitar servicio</h2></div><span class="panel-mark">+</span></div>
-            <p class="request-intro">Cuéntanos qué necesita tu vehículo. El mecánico revisará la solicitud y preparará una evaluación.</p>
-            <form class="request-form" (ngSubmit)="requestServiceOrder()"><div class="form-row"><label>Vehículo<select name="requestVehicleId" [(ngModel)]="requestVehicleId" required><option [ngValue]="0">Selecciona tu vehículo</option><option [ngValue]="vehicle.id" *ngFor="let vehicle of vehicles">{{ vehicle.brand }} {{ vehicle.model }} · {{ vehicle.plate }}</option></select></label><label>Tipo de atención<select name="requestService" [(ngModel)]="requestService"><option>Diagnóstico general</option><option>Mantención preventiva</option><option>Revisión de frenos</option><option>Reparación</option></select></label></div><label>¿Qué le ocurre o qué necesita?<textarea name="requestDescription" [(ngModel)]="requestDescription" required rows="4" placeholder="Ejemplo: el vehículo vibra al frenar y necesita revisión de pastillas"></textarea></label><button class="primary-button" type="submit">Enviar solicitud</button><small class="message" *ngIf="requestMessage">{{ requestMessage }}</small></form>
-        </section>
-
-        <section class="vehicles-section"><div class="section-title"><div><p class="eyebrow">Vehículos registrados</p><h2>Mi garaje</h2></div></div><div class="vehicle-grid"><article *ngFor="let vehicle of vehicles" class="vehicle-card"><div class="vehicle-icon">{{ vehicle.type === 'Moto' ? 'MOTO' : 'AUTO' }}</div><div><h3>{{ vehicle.brand }} {{ vehicle.model }}</h3><p>{{ vehicle.plate }} · {{ vehicle.year }} · {{ vehicle.type }}</p></div><span class="vehicle-state">Activo</span></article><p class="empty" *ngIf="!vehicles.length">Aún no tienes vehículos registrados.</p></div></section>
-
-        <section class="orders-section"><div class="section-title"><div><p class="eyebrow">Historial y seguimiento</p><h2>Mis órdenes de trabajo</h2></div><span class="count-label">{{ orders.length }} registros</span></div><div class="order-list"><article class="order-card" *ngFor="let order of orders" [class.selected]="selectedOrder?.id === order.id" (click)="openOrder(order)"><div class="order-main"><div class="order-head"><span>#{{ order.id }} · {{ order.createdAt }}</span><b [class]="'status status-' + order.status">{{ order.status | titlecase }}</b></div><h3>{{ vehicleLabel(order.vehicleId) }}</h3><p>{{ order.description }}</p><div class="tags"><span *ngFor="let service of order.services">{{ service }}</span></div></div><div class="progress"><div class="progress-track"><span [style.width.%]="order.status === 'solicitada' ? 10 : order.status === 'recibido' ? 25 : order.status === 'diagnóstico' ? 50 : order.status === 'reparación' ? 75 : 100"></span></div><small>Ver detalle <strong>→</strong></small></div></article><p class="empty" *ngIf="!orders.length">No tienes órdenes registradas todavía.</p></div></section>
-
-        <section class="detail-layout" *ngIf="selectedOrder as order"><div class="panel detail-panel"><div class="section-title"><div><p class="eyebrow">Orden #{{ order.id }} · {{ vehicleLabel(order.vehicleId) }}</p><h2>Resumen del servicio</h2></div><b [class]="'status status-' + order.status">{{ order.status | titlecase }}</b></div><div class="progress large-progress"><div class="progress-track"><span [style.width.%]="orderProgress"></span></div><small>Estado actual del vehículo: <strong>{{ order.status | titlecase }}</strong></small></div><div class="info-grid"><div><span>Diagnóstico</span><strong>{{ order.diagnosis || 'En evaluación por el taller' }}</strong></div><div><span>Próxima mantención</span><strong>{{ order.nextMaintenance || 'Por definir' }}</strong></div><div><span>Repuestos utilizados</span><strong>{{ order.parts?.join(', ') || 'Aún no informado' }}</strong></div><div><span>Mano de obra</span><strong>{{ order.laborHours ? order.laborHours + ' horas' : 'Aún no informado' }}</strong></div><div class="wide-info"><span>Observaciones del taller</span><strong>{{ order.observations || 'Sin observaciones adicionales' }}</strong></div></div></div>
-            <aside class="panel quote-panel"><p class="eyebrow">Cotización</p><h2>{{ order.cost ? ('$' + (order.cost | number:'1.0-0')) : 'Pendiente' }}</h2><span [class]="'quote-state quote-' + quoteStatusLabel">{{ quoteStatusLabel | titlecase }}</span><p>Revisa el presupuesto informado por el taller y registra tu decisión.</p><div class="quote-actions" *ngIf="order.cost && quoteStatusLabel === 'pendiente'"><button class="approve-button" (click)="respondToQuote('aprobado'); $event.stopPropagation()">Aprobar</button><button class="reject-button" (click)="respondToQuote('rechazado'); $event.stopPropagation()">Rechazar</button></div><small *ngIf="!order.cost">La cotización estará disponible cuando el taller complete la evaluación.</small></aside>
-        </section>
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <a class="brand" href="/">
+      <span class="brand-mark">NC</span>
+      <strong>NEXUS CARS</strong>
+    </a>
+    <div class="user-area">
+      <button class="link-button" type="button" (click)="startProfileEdit(); showProfileModal = true">
+        👤 {{ user?.name || 'Mi Perfil' }}
+      </button>
+      <button (click)="logout()">Cerrar sesión</button>
     </div>
+  </header>
+
+  <div class="container content">
+    <!-- WELCOME & QUICK SUMMARY -->
+    <div class="welcome">
+      <div>
+        <p class="eyebrow">Portal de Clientes</p>
+        <h1>Hola{{ firstName ? ', ' + firstName : '' }}.</h1>
+        <p>Revisa el estado de tu vehículo en tiempo real y gestiona tus presupuestos con 1 clic.</p>
+      </div>
+
+      <div class="header-actions">
+        <button class="primary-button highlight-btn" type="button" (click)="showRequestModal = true">
+          + Solicitar Atención
+        </button>
+      </div>
+    </div>
+
+    <!-- TABS DE NAVEGACIÓN -->
+    <nav class="client-tabs" aria-label="Secciones del cliente">
+      <button 
+        type="button" 
+        [class.active]="activeTab === 'auto'" 
+        (click)="activeTab = 'auto'">
+        🚗 Mi Auto en Taller
+        <span class="tab-badge" *ngIf="inProgressOrders.length">{{ inProgressOrders.length }}</span>
+      </button>
+      <button 
+        type="button" 
+        [class.active]="activeTab === 'garaje'" 
+        (click)="activeTab = 'garaje'">
+        📋 Mis Vehículos ({{ vehicles.length }})
+      </button>
+      <button 
+        type="button" 
+        [class.active]="activeTab === 'historial'" 
+        (click)="activeTab = 'historial'">
+        📜 Historial
+        <span class="tab-badge muted" *ngIf="completedOrders.length">{{ completedOrders.length }}</span>
+      </button>
+    </nav>
+
+    <!-- ========================================== -->
+    <!-- PESTAÑA 1: MI VEHÍCULO EN TALLER (HERO)   -->
+    <!-- ========================================== -->
+    <section *ngIf="activeTab === 'auto'" class="tab-panel">
+      <!-- Si hay una orden en curso o seleccionada -->
+      <div *ngIf="selectedOrder as order; else noActiveOrder">
+        <!-- Selector rápido si el cliente tiene más de 1 orden activa -->
+        <div class="order-switcher" *ngIf="orders.length > 1">
+          <small>Seleccionar orden:</small>
+          <button 
+            *ngFor="let ord of orders" 
+            [class.active]="ord.id === order.id" 
+            (click)="openOrder(ord)">
+            #{{ ord.id }} · {{ vehicleLabel(ord.vehicleId) }}
+          </button>
+        </div>
+
+        <!-- TARJETA PRINCIPAL DEL VEHÍCULO -->
+        <article class="hero-vehicle-card">
+          <div class="vehicle-header">
+            <div>
+              <span class="order-badge">Orden #{{ order.id }} · {{ order.createdAt }}</span>
+              <h2>{{ vehicleLabel(order.vehicleId) }}</h2>
+              <p class="service-desc">{{ order.description }}</p>
+            </div>
+            <div class="status-box">
+              <span [class]="'status-pill status-' + order.status">
+                {{ order.status | titlecase }}
+              </span>
+              <small *ngIf="order.nextMaintenance && order.nextMaintenance !== 'Por definir'">
+                Próx. mantención: {{ order.nextMaintenance }}
+              </small>
+            </div>
+          </div>
+
+          <!-- LÍNEA DE TIEMPO INTERACTIVA EN 5 PASOS -->
+          <div class="timeline-container">
+            <div class="timeline-track">
+              <div class="timeline-bar" [style.width.%]="orderProgress"></div>
+            </div>
+            <div class="timeline-steps">
+              <div class="step" [class.done]="orderProgress >= 10">
+                <span class="step-circle">1</span>
+                <strong>Solicitada</strong>
+                <small>Cita agendada</small>
+              </div>
+              <div class="step" [class.done]="orderProgress >= 25">
+                <span class="step-circle">2</span>
+                <strong>Recibido</strong>
+                <small>En mesón</small>
+              </div>
+              <div class="step" [class.done]="orderProgress >= 50">
+                <span class="step-circle">3</span>
+                <strong>Diagnóstico</strong>
+                <small>Evaluación</small>
+              </div>
+              <div class="step" [class.done]="orderProgress >= 75">
+                <span class="step-circle">4</span>
+                <strong>Reparación</strong>
+                <small>En taller</small>
+              </div>
+              <div class="step" [class.done]="orderProgress >= 100">
+                <span class="step-circle">5</span>
+                <strong>¡Listo!</strong>
+                <small>Para entrega</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- BANNER DE TOTAL FINAL (CUANDO EL TRABAJO ESTÁ TERMINADO O LISTO PARA ENTREGA) -->
+          <div class="quote-decision-card" style="border-color: #62d889; background: linear-gradient(135deg, #091a0e 0%, #051009 100%);" *ngIf="order.status === 'trabajo_terminado' || order.status === 'listo_para_entrega' || order.status === 'listo' || order.status === 'entregado' || order.status === 'cerrado'">
+            <div class="quote-info">
+              <div>
+                <span class="quote-tag" style="background: rgba(98, 216, 137, 0.2); color: #62d889;">
+                  TOTAL FINAL CONFIRMADO
+                </span>
+                <h3 class="quote-total" style="color: #62d889;">
+                  ${{ (order.totalFinal || order.quoteTotal || order.cost || 0) | number:'1.0-0' }}
+                </h3>
+              </div>
+              <p style="margin: 6px 0 0; color: var(--muted); font-size: 0.78rem;">
+                Valor correspondiente al trabajo realmente realizado y validado por recepción.
+              </p>
+            </div>
+            <div class="status-pill status-listo" style="align-self: center;">
+              Listo para Retiro
+            </div>
+          </div>
+
+          <!-- TARJETA DE COTIZACIÓN ESTIMADA (DURANTE DIAGNÓSTICO / EVALUACIÓN) -->
+          <div class="quote-decision-card" *ngIf="order.cost || order.quoteTotal">
+            <div class="quote-info">
+              <div>
+                <span class="quote-tag" [class]="'tag-' + quoteStatusLabel">
+                  COTIZACIÓN (Versión {{ order.quoteVersion || 1 }}): {{ quoteStatusLabel | uppercase }}
+                </span>
+                <h3 class="quote-total">
+                  ${{ (order.quoteTotal || order.cost || 0) | number:'1.0-0' }}
+                </h3>
+              </div>
+              <p class="quote-breakdown" *ngIf="order.partsCost || order.laborCost">
+                <span *ngIf="order.partsCost">Repuestos: ${{ order.partsCost | number:'1.0-0' }}</span>
+                <span *ngIf="order.laborCost"> · Mano de obra: ${{ order.laborCost | number:'1.0-0' }}</span>
+              </p>
+              <p style="margin: 10px 0 0; color: #d0d0d0; font-size: 0.72rem; line-height: 1.4; font-style: italic;">
+                "El valor corresponde a una cotización estimada. El precio puede variar si durante la reparación se detectan problemas adicionales o trabajos no contemplados inicialmente."
+              </p>
+            </div>
+
+            <!-- Botones si la cotización está pendiente -->
+            <div class="quote-cta-actions" *ngIf="quoteStatusLabel === 'pendiente'">
+              <button class="approve-button" (click)="respondToQuote('aprobado')">
+                ✓ APROBAR COTIZACIÓN
+              </button>
+              <button class="reject-button" (click)="respondToQuote('rechazado')">
+                ✗ RECHAZAR COTIZACIÓN
+              </button>
+            </div>
+
+            <!-- Mensaje si ya fue aprobada -->
+            <div class="quote-confirmed" *ngIf="quoteStatusLabel === 'aprobado'">
+              <span class="check-icon">✓</span> Cotización aprobada. El taller tiene autorización para la reparación.
+            </div>
+          </div>
+
+          <!-- ALERTA DE TRABAJO ADICIONAL DETECTADO DURANTE REPARACIÓN -->
+          <div class="quote-decision-card" style="border-color: #ff782d; background: linear-gradient(135deg, #200f07 0%, #150903 100%);" *ngFor="let extra of pendingAdditionalWorks">
+            <div class="quote-info">
+              <span class="quote-tag" style="background: rgba(255, 120, 45, 0.2); color: #ff782d;">
+                ⚠️ TRABAJO ADICIONAL DETECTADO
+              </span>
+              <p style="margin: 8px 0 10px; color: var(--text); font-size: 0.82rem; line-height: 1.5;">
+                <em>"Durante la reparación de su vehículo se detectó un problema adicional que no estaba contemplado en la cotización original."</em>
+              </p>
+              <div style="font-size: 0.8rem; color: var(--muted); margin-bottom: 8px;">
+                <strong>Problema detectado:</strong> {{ extra.descripcion }}<br>
+                <strong>Motivo técnico:</strong> {{ extra.motivo }}
+              </div>
+              <div style="display: flex; gap: 16px; font-size: 0.82rem; margin-top: 6px;">
+                <span>Cotización anterior: <strong>${{ (order.cost || order.quoteTotal || 0) | number:'1.0-0' }}</strong></span>
+                <span style="color: #ff782d;">Costo adicional: <strong>+${{ extra.costoEstimado | number:'1.0-0' }}</strong></span>
+                <span style="color: #62d889;">Nuevo total estimado: <strong>${{ ((order.cost || order.quoteTotal || 0) + extra.costoEstimado) | number:'1.0-0' }}</strong></span>
+              </div>
+            </div>
+            <div class="quote-cta-actions">
+              <button class="approve-button" (click)="decideAdditional(extra.id, true)">
+                ✓ APROBAR ADICIONAL
+              </button>
+              <button class="reject-button" (click)="decideAdditional(extra.id, false)">
+                ✗ RECHAZAR ADICIONAL
+              </button>
+            </div>
+          </div>
+
+          <!-- DETALLES TÉCNICOS TRANSPARENTES -->
+          <div class="details-grid">
+            <div class="detail-box">
+              <span class="detail-title">Diagnóstico del Taller</span>
+              <p>{{ order.diagnosis || 'El mecánico está inspeccionando el vehículo.' }}</p>
+            </div>
+
+            <div class="detail-box" *ngIf="order.receptionNotes || order.entryMileage">
+              <span class="detail-title">Datos de Ingreso (Recepción)</span>
+              <p>
+                <span *ngIf="order.entryMileage"><strong>Odómetro:</strong> {{ order.entryMileage }} km<br></span>
+                <span *ngIf="order.fuelLevel"><strong>Combustible:</strong> {{ order.fuelLevel }}<br></span>
+                <span *ngIf="order.receptionNotes">{{ order.receptionNotes }}</span>
+              </p>
+            </div>
+
+            <div class="detail-box" *ngIf="order.parts?.length">
+              <span class="detail-title">Repuestos a Utilizar</span>
+              <p>{{ order.parts?.join(', ') }}</p>
+            </div>
+
+            <div class="detail-box" *ngIf="order.observations">
+              <span class="detail-title">Observaciones</span>
+              <p>{{ order.observations }}</p>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <!-- Estado vacío si el cliente no tiene órdenes activas -->
+      <ng-template #noActiveOrder>
+        <div class="empty-state-card">
+          <div class="empty-icon">🚗</div>
+          <h2>No tienes ningún vehículo en el taller ahora mismo</h2>
+          <p>Cuando ingreses tu auto o moto al taller, podrás seguir cada etapa en vivo desde esta pantalla.</p>
+          <button class="primary-button highlight-btn" (click)="showRequestModal = true">
+            Solicitar Mantención o Revisión →
+          </button>
+        </div>
+      </ng-template>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- PESTAÑA 2: MI GARAJE (MIS VEHÍCULOS)      -->
+    <!-- ========================================== -->
+    <section *ngIf="activeTab === 'garaje'" class="tab-panel">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">Mis Vehículos</p>
+          <h2>Garaje Personal</h2>
+        </div>
+        <button class="primary-button compact" type="button" (click)="showNewVehicleModal = true">
+          + Agregar Vehículo
+        </button>
+      </div>
+
+      <div class="vehicle-cards-grid" *ngIf="vehicles.length; else noVehicles">
+        <article *ngFor="let vehicle of vehicles" class="garage-card">
+          <div class="garage-icon">{{ vehicle.type === 'Moto' ? 'MOTO' : 'AUTO' }}</div>
+          <div class="garage-info">
+            <h3>{{ vehicle.brand }} {{ vehicle.model }}</h3>
+            <p class="garage-plate">{{ vehicle.plate }}</p>
+            <span class="garage-meta">Año {{ vehicle.year }} · {{ vehicle.type }}</span>
+          </div>
+          <button class="ghost-button compact" (click)="requestVehicleId = vehicle.id; showRequestModal = true">
+            Agendar Servicio
+          </button>
+        </article>
+      </div>
+
+      <ng-template #noVehicles>
+        <div class="empty-state-card">
+          <p>Aún no has registrado ningún vehículo en tu cuenta.</p>
+          <button class="primary-button" (click)="showNewVehicleModal = true">Registrar mi primer vehículo</button>
+        </div>
+      </ng-template>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- PESTAÑA 3: HISTORIAL DE SERVICIOS         -->
+    <!-- ========================================== -->
+    <section *ngIf="activeTab === 'historial'" class="tab-panel">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">Registro Histórico</p>
+          <h2>Historial de Atenciones</h2>
+        </div>
+        <span class="count-label">{{ orders.length }} órdenes registradas</span>
+      </div>
+
+      <div class="history-table-wrap" *ngIf="orders.length; else noHistory">
+        <article class="history-item" *ngFor="let ord of orders" (click)="openOrder(ord); activeTab = 'auto'">
+          <div class="history-main">
+            <div class="history-head">
+              <span class="history-id">#{{ ord.id }} · {{ ord.createdAt }}</span>
+              <span [class]="'status-pill status-' + ord.status">{{ ord.status | titlecase }}</span>
+            </div>
+            <h4>{{ vehicleLabel(ord.vehicleId) }}</h4>
+            <p>{{ ord.description }}</p>
+            <div class="history-tags">
+              <span *ngFor="let s of ord.services">{{ s }}</span>
+            </div>
+          </div>
+          <div class="history-cost">
+            <small>Total servicio</small>
+            <strong>${{ (ord.quoteTotal || ord.cost || 0) | number:'1.0-0' }}</strong>
+            <span class="view-link">Ver detalle →</span>
+          </div>
+        </article>
+      </div>
+
+      <ng-template #noHistory>
+        <p class="empty">No tienes historial de órdenes en tu cuenta.</p>
+      </ng-template>
+    </section>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: SOLICITAR ATENCIÓN                 -->
+  <!-- ========================================== -->
+  <div class="modal-backdrop" *ngIf="showRequestModal" (click)="showRequestModal = false">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">Nueva Atención</p>
+          <h2>Solicitar Servicio para tu Vehículo</h2>
+        </div>
+        <button class="ghost-button compact" (click)="showRequestModal = false">✕</button>
+      </div>
+
+      <p class="modal-intro">
+        Cuéntanos qué necesita tu auto o moto y el taller preparará tu orden de ingreso.
+      </p>
+
+      <div class="alert alert-success" *ngIf="requestMessage">{{ requestMessage }}</div>
+
+      <form (ngSubmit)="requestServiceOrder()">
+        <label>
+          Vehículo a atender
+          <select name="requestVehicleId" [(ngModel)]="requestVehicleId" required>
+            <option [ngValue]="0" disabled>Selecciona tu vehículo</option>
+            <option [ngValue]="vehicle.id" *ngFor="let vehicle of vehicles">
+              {{ vehicle.brand }} {{ vehicle.model }} · {{ vehicle.plate }}
+            </option>
+          </select>
+        </label>
+
+        <label>
+          Tipo de atención que requieres
+          <select name="requestService" [(ngModel)]="requestService">
+            <option>Diagnóstico general</option>
+            <option>Mantención preventiva</option>
+            <option>Revisión de frenos</option>
+            <option>Cambio de aceite</option>
+            <option>Reparación mecánica</option>
+          </select>
+        </label>
+
+        <label>
+          ¿Qué síntomas presenta o qué deseas revisar?
+          <textarea 
+            name="requestDescription" 
+            [(ngModel)]="requestDescription" 
+            required 
+            rows="3" 
+            placeholder="Ejemplo: Ruido al pasar por baches, revisión de frenos y cambio de pastillas."></textarea>
+        </label>
+
+        <div class="modal-actions">
+          <button type="button" class="ghost-button" (click)="showRequestModal = false">Cerrar</button>
+          <button type="submit" class="primary-button highlight-btn" [disabled]="!requestVehicleId">
+            Enviar Solicitud al Taller →
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: REGISTRAR VEHÍCULO EN GARAJE       -->
+  <!-- ========================================== -->
+  <div class="modal-backdrop" *ngIf="showNewVehicleModal" (click)="showNewVehicleModal = false">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">Mi Garaje</p>
+          <h2>Agregar Vehículo</h2>
+        </div>
+        <button class="ghost-button compact" (click)="showNewVehicleModal = false">✕</button>
+      </div>
+
+      <div class="alert alert-success" *ngIf="vehicleMessage">{{ vehicleMessage }}</div>
+
+      <form (ngSubmit)="registerVehicle()">
+        <div class="form-row">
+          <label>
+            Tipo
+            <select name="vehicleType" [(ngModel)]="vehicleType">
+              <option value="Auto">Auto</option>
+              <option value="Moto">Moto</option>
+            </select>
+          </label>
+          <label>
+            Patente / Placa
+            <input name="vehiclePlate" [(ngModel)]="vehiclePlate" placeholder="AA-BB-11" required />
+          </label>
+        </div>
+
+        <div class="form-row">
+          <label>
+            Marca
+            <input name="vehicleBrand" [(ngModel)]="vehicleBrand" placeholder="Mazda / Honda" required />
+          </label>
+          <label>
+            Modelo
+            <input name="vehicleModel" [(ngModel)]="vehicleModel" placeholder="CX-5 / CBR" required />
+          </label>
+        </div>
+
+        <label>
+          Año
+          <input name="vehicleYear" type="number" min="1900" [max]="maxVehicleYear" [(ngModel)]="vehicleYear" required />
+        </label>
+
+        <div class="modal-actions">
+          <button type="button" class="ghost-button" (click)="showNewVehicleModal = false">Cancelar</button>
+          <button type="submit" class="primary-button">Guardar en mi garaje</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: EDITAR PERFIL PERSONAL             -->
+  <!-- ========================================== -->
+  <div class="modal-backdrop" *ngIf="showProfileModal" (click)="showProfileModal = false">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">Mi Cuenta</p>
+          <h2>Datos Personales</h2>
+        </div>
+        <button class="ghost-button compact" (click)="showProfileModal = false">✕</button>
+      </div>
+
+      <div class="alert alert-success" *ngIf="profileMessage">{{ profileMessage }}</div>
+
+      <form (ngSubmit)="saveProfile()">
+        <label>
+          Nombre completo
+          <input name="profileName" [(ngModel)]="profileName" [placeholder]="user?.name || 'Tu nombre'" required />
+        </label>
+        <label>
+          Correo electrónico
+          <input name="profileEmail" type="email" [(ngModel)]="profileEmail" [placeholder]="user?.email || 'tu@email.com'" required />
+        </label>
+
+        <div class="modal-actions">
+          <button type="button" class="ghost-button" (click)="showProfileModal = false">Cerrar</button>
+          <button type="submit" class="primary-button">Guardar cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </main>

@@ -7,5 +7,7 @@ export const roleGuard = (role: UserRole): CanActivateFn => () => {
   const workshop = inject(WorkshopService);
   const router = inject(Router);
   const user = workshop.currentUser();
-  return user?.role === role ? true : router.createUrlTree(['/login']);
+
+  const allowedRoles: UserRole[] = role === 'admin' ? ['admin', 'recepcionista'] : [role];
+  return user && !user.forcePasswordChange && allowedRoles.includes(user.role) ? true : router.createUrlTree(['/login']);
 };

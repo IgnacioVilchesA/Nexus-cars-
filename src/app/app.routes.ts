@@ -8,6 +8,7 @@ import { MechanicDashboardComponent } from './pages/mechanic-dashboard/mechanic-
 import { ServicesComponent } from './pages/services/services.component';
 import { AboutComponent } from './pages/about/about.component';
 import { ContactComponent } from './pages/contact/contact.component';
+import { ReceptionistDashboardComponent } from './pages/receptionist-dashboard/receptionist-dashboard.component';
 import { roleGuard } from './core/guards/role.guard';
 
 export const routes: Routes = [
@@ -18,6 +19,8 @@ export const routes: Routes = [
 	{ path: 'login', component: LoginComponent },
 	{ path: 'registro', component: RegisterComponent },
 	{ path: 'admin', component: AdminDashboardComponent, canActivate: [roleGuard('admin')] },
+	{ path: 'recepcionista', component: ReceptionistDashboardComponent, canActivate: [roleGuard('recepcionista')] },
+	{ path: 'recepcion', redirectTo: 'recepcionista', pathMatch: 'full' },
 	{ path: 'mecanico', component: MechanicDashboardComponent, canActivate: [roleGuard('mecanico')] },
 	{ path: 'cliente', component: ClientDashboardComponent, canActivate: [roleGuard('cliente')] },
 	{ path: '**', redirectTo: '' }

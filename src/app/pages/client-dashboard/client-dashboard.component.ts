@@ -22,6 +22,12 @@ export class ClientDashboardComponent {
   requestDescription = '';
   requestService = 'Diagnóstico general';
   requestMessage = '';
+
+  activeTab: 'auto' | 'garaje' | 'historial' = 'auto';
+  showNewVehicleModal = false;
+  showRequestModal = false;
+  showProfileModal = false;
+
   constructor(public workshop: WorkshopService, private readonly router: Router) { }
   get user() { return this.workshop.currentUser(); }
   get firstName(): string { return this.user?.name?.split(' ').at(0) || ''; }
@@ -33,16 +39,76 @@ export class ClientDashboardComponent {
     const u = this.user;
     return u ? this.workshop.clientOrders(u.id) : [];
   }
-  get selectedOrder(): WorkOrder | undefined { return this.orders.find((order) => order.id === Number(this.selectedOrderId)) || this.orders[0]; }
+  get selectedOrder(): WorkOrder | undefined { 
+    return this.orders.find((order) => order.id === Number(this.selectedOrderId)) || this.activeOrder; 
+  }
+
+  get activeOrder(): WorkOrder | undefined {
+    return this.orders.find((order) => 
+      order.status !== 'listo' && 
+      order.status !== 'listo_para_entrega' && 
+      order.status !== 'entregado' && 
+      order.status !== 'cerrado'
+    ) || this.orders[0];
+  }
+
+  get inProgressOrders(): WorkOrder[] {
+    return this.orders.filter((order) => 
+      order.status !== 'listo' && 
+      order.status !== 'listo_para_entrega' && 
+      order.status !== 'entregado' && 
+      order.status !== 'cerrado'
+    );
+  }
+
+  get completedOrders(): WorkOrder[] {
+    return this.orders.filter((order) => 
+      order.status === 'listo' || 
+      order.status === 'listo_para_entrega' || 
+      order.status === 'entregado' || 
+      order.status === 'cerrado'
+    );
+  }
+
   get nextMaintenance(): string { return this.orders.find((order) => order.nextMaintenance && order.nextMaintenance !== 'Por definir')?.nextMaintenance || 'Por definir'; }
   get activeVehicles(): number { return this.vehicles.filter((vehicle) => this.orders.some((order) => order.vehicleId === vehicle.id && order.status !== 'listo')).length; }
   get orderProgress(): number {
-    const progress: Record<string, number> = { solicitada: 10, recibido: 25, diagnóstico: 50, reparación: 75, listo: 100 };
-    return this.selectedOrder ? progress[this.selectedOrder.status] : 0;
+    const progress: Record<string, number> = { 
+      solicitada: 10, 
+      recibido: 25, 
+      diagnóstico: 50, 
+      en_diagnostico: 50, 
+      cotizacion_pendiente: 50,
+      cotizacion_aprobada: 60,
+      reparación: 75, 
+      en_reparacion: 75, 
+      esperando_aprobacion: 65,
+      trabajo_terminado: 90,
+      listo: 100, 
+      listo_para_entrega: 100,
+      entregado: 100,
+      cerrado: 100 
+    };
+    return this.selectedOrder ? (progress[this.selectedOrder.status] ?? 25) : 0;
   }
   get quoteStatusLabel(): string {
     return this.selectedOrder?.quoteStatus || (this.selectedOrder?.cost ? 'pendiente' : 'sin cotización');
   }
+
+  get currentOrderAdditionalWorks() {
+    return this.workshop.additionalWorks().filter((w) => w.orderId === this.selectedOrder?.id);
+  }
+
+  get pendingAdditionalWorks() {
+    return this.currentOrderAdditionalWorks.filter((w) => w.estado === 'PENDIENTE_REVISION' || w.estado === 'PENDIENTE_APROBACION');
+  }
+
+  decideAdditional(workId: number, approve: boolean): void {
+    if (this.selectedOrder) {
+      this.workshop.clientDecideAdditionalWork(this.selectedOrder.id, workId, approve);
+    }
+  }
+
   openOrder(order: WorkOrder): void { this.selectedOrderId = order.id; }
   startProfileEdit(): void {
     this.profileName = this.user?.name || '';
