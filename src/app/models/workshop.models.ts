@@ -117,6 +117,35 @@ export interface QuoteDetail {
   subtotal: number;
 }
 
+export interface SparePart {
+  id: number;
+  name: string;
+  code: string;
+  category: string;
+  price: number;
+  stock: number;
+  stockMinimo: number;
+  supplier?: string;
+  active?: boolean;
+}
+
+export interface StockMovement {
+  id: number;
+  sparePartId: number;
+  partName: string;
+  partCode: string;
+  userId: number | null;
+  userName: string;
+  orderId: number | null;
+  type: 'entrada' | 'salida' | 'ajuste';
+  quantity: number;
+  stockBefore: number;
+  stockAfter: number;
+  supplier: string;
+  reference: string;
+  createdAt: string;
+}
+
 export interface AdditionalWork {
   id: number;
   orderId: number;

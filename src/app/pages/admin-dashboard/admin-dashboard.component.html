@@ -1,20 +1,19 @@
-<main class="admin-dashboard">
-  <header class="topbar">
-    <a class="brand" href="/">
-      <span class="brand-mark">NC</span>
-      <strong>NEXUS CARS</strong>
-    </a>
-    <div class="user-area">
-      <span>Administrador</span>
-      <button (click)="logout()">Cerrar sesión</button>
-    </div>
-  </header>
+<main class="shell admin-shell">
+  <aside class="sidebar">
+    <a routerLink="/" class="brand"><b>NC</b><span>NEXUS <em>CARS</em></span></a>
+    <nav><button type="button" *ngFor="let item of nav" (click)="setSection(item.id)" [class.active]="section === item.id"><i>{{ item.icon }}</i>{{ item.label }}</button></nav>
+    <div class="sidebar-foot"><span>Portal de administración</span><button type="button" (click)="logout()">Cerrar sesión →</button></div>
+  </aside>
+
+  <section class="workspace">
+    <header class="admin-header"><div><p class="eyebrow">CONTROL DEL TALLER</p><h1>Administración</h1></div><div class="header-actions"><span>{{ workshop.currentUser()?.name || 'Administrador' }}</span><button class="primary-button" type="button" (click)="exportWorkbook()">Exportar Excel</button><button class="logout-button" type="button" (click)="logout()">Salir</button></div></header>
 
   <div class="container content">
-    <section class="hero">
+    <section class="hero" id="inicio" *ngIf="section === 'inicio'">
       <div>
         <p class="eyebrow">Panel administrativo</p>
-        <h1>Control total del taller</h1>
+        <h1>Bienvenido, Administrador Nexus</h1>
+        <p class="welcome-copy">Gestiona la operaciÃ³n de Nexus Cars desde un solo lugar.</p>
       </div>
       <div class="stats">
         <div>
@@ -36,36 +35,38 @@
       </div>
     </section>
 
-    <section class="panel create-mechanic">
+    <section class="panel create-mechanic" id="personal" *ngIf="section === 'personal'">
       <div class="section-header">
         <div>
-          <p class="eyebrow">Acceso de mecánico</p>
-          <h2>Crear usuario mecánico</h2>
+          <p class="eyebrow">Accesos internos</p>
+          <h2>Crear cuenta de personal</h2>
         </div>
       </div>
 
-      <form class="two-columns" (ngSubmit)="createMechanic()">
+      <form class="two-columns" (ngSubmit)="createStaff()">
         <label>
           Nombre
-          <input [(ngModel)]="mechanicForm.name" name="mechanicName" placeholder="Ej: Carlos Silva" />
+          <input [(ngModel)]="staffForm.name" name="staffName" placeholder="Ej: Carlos Silva" required />
         </label>
         <label>
           Correo
-          <input [(ngModel)]="mechanicForm.email" name="mechanicEmail" type="email" placeholder="mecanico@taller.cl" />
+          <input [(ngModel)]="staffForm.email" name="staffEmail" type="email" placeholder="persona@taller.cl" required />
         </label>
         <label>
-          Contraseña
-          <input [(ngModel)]="mechanicForm.password" name="mechanicPassword" type="text" placeholder="mecanico123" />
+          Contraseña temporal
+          <input [(ngModel)]="staffForm.password" name="staffPassword" type="password" minlength="12" required />
         </label>
-        <button type="submit" class="primary-button">Crear login</button>
+        <label>Rol<select [(ngModel)]="staffForm.role" name="staffRole"><option value="mecanico">Mecánico</option><option value="recepcionista">Recepcionista</option></select></label>
+        <button type="submit" class="primary-button">Crear cuenta</button>
       </form>
+      <p class="feedback" *ngIf="staffMessage">{{ staffMessage }}</p>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="usuarios" *ngIf="section === 'personal' || section === 'usuarios'">
       <div class="section-header">
         <div>
           <p class="eyebrow">Usuarios</p>
-          <h2>Clientes y mecánicos</h2>
+          <h2>Personas y accesos</h2>
         </div>
       </div>
 
@@ -76,6 +77,7 @@
               <th>Nombre</th>
               <th>Correo</th>
               <th>Rol</th>
+              <th>Estado</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -84,8 +86,9 @@
               <td>{{ user.name }}</td>
               <td>{{ user.email }}</td>
               <td>{{ user.role }}</td>
+              <td>{{ user.active === false ? 'Inactivo' : 'Activo' }}</td>
               <td class="actions">
-                <button class="ghost-button" type="button" (click)="deleteUser(user.id)">Eliminar</button>
+                <button class="ghost-button" type="button" *ngIf="user.active !== false && user.id !== workshop.currentUser()?.id" (click)="deleteUser(user.id)">Desactivar</button>
               </td>
             </tr>
           </tbody>
@@ -93,8 +96,8 @@
       </div>
     </section>
 
-    <section class="grid-two">
-      <div class="panel">
+    <ng-container>
+      <div class="panel" id="vehiculos" *ngIf="section === 'vehiculos'">
         <div class="section-header">
           <div>
             <p class="eyebrow">Inventario</p>
@@ -160,7 +163,7 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="ordenes" *ngIf="section === 'ordenes'">
         <div class="section-header">
           <div>
             <p class="eyebrow">Operación</p>
@@ -227,9 +230,81 @@
           </table>
         </div>
       </div>
+    </ng-container>
+
+    <section class="panel" id="inventario" *ngIf="section === 'inventario'">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">Inventario</p>
+          <h2>Repuestos del taller</h2>
+        </div>
+      </div>
+
+      <form class="stack" (ngSubmit)="saveSparePart()">
+        <div class="two-columns mini-grid">
+          <label>
+            Nombre
+            <input [(ngModel)]="sparePartForm.name" name="sparePartName" placeholder="Pastillas de freno" />
+          </label>
+          <label>
+            Código
+            <input [(ngModel)]="sparePartForm.code" name="sparePartCode" placeholder="FR-001" />
+          </label>
+          <label>
+            Categoría
+            <input [(ngModel)]="sparePartForm.category" name="sparePartCategory" placeholder="Frenos" />
+          </label>
+          <label>
+            Proveedor
+            <input [(ngModel)]="sparePartForm.supplier" name="sparePartSupplier" placeholder="AutoMax" />
+          </label>
+          <label>
+            Precio
+            <input [(ngModel)]="sparePartForm.price" name="sparePartPrice" type="number" min="0" />
+          </label>
+          <label>
+            Stock
+            <input [(ngModel)]="sparePartForm.stock" name="sparePartStock" type="number" min="0" />
+          </label>
+          <label>
+            Stock mínimo
+            <input [(ngModel)]="sparePartForm.stockMinimo" name="sparePartMin" type="number" min="0" />
+          </label>
+        </div>
+        <button type="submit" class="primary-button">{{ editingSparePartId ? 'Guardar repuesto' : 'Agregar repuesto' }}</button>
+      </form>
+
+      <div class="table-wrap small-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Código</th>
+              <th>Precio</th>
+              <th>Stock</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let part of spareParts">
+              <td>{{ part.name }}</td>
+              <td>{{ part.code }}</td>
+              <td>${{ part.price | number }}</td>
+              <td>{{ part.stock }} (mín. {{ part.stockMinimo }})</td>
+              <td class="actions compact-actions">
+                <button class="ghost-button" type="button" (click)="editSparePart(part)">Editar</button>
+                <button class="ghost-button danger" type="button" (click)="deleteSparePart(part.id)">Eliminar</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="low-stock-note" *ngIf="lowStockParts.length">Hay {{ lowStockParts.length }} repuesto(s) en o bajo el stock mínimo.</p>
+      <h3 class="subheading">Movimientos recientes</h3>
+      <div class="table-wrap small-table"><table><thead><tr><th>Fecha</th><th>Repuesto</th><th>Movimiento</th><th>Saldo</th><th>Responsable</th></tr></thead><tbody><tr *ngFor="let movement of workshop.stockMovements().slice(0, 10)"><td>{{ movement.createdAt | date:'dd/MM/yyyy HH:mm' }}</td><td>{{ movement.partName }} <small>{{ movement.partCode }}</small></td><td>{{ movement.type }} · {{ movement.quantity }}</td><td>{{ movement.stockBefore }} → {{ movement.stockAfter }}</td><td>{{ movement.userName }}</td></tr><tr *ngIf="!workshop.stockMovements().length"><td colspan="5">Aún no hay movimientos registrados.</td></tr></tbody></table></div>
     </section>
 
-    <section class="panel summary-panel">
+    <section class="panel summary-panel" id="indicadores" *ngIf="section === 'indicadores'">
       <div class="section-header">
         <div>
           <p class="eyebrow">Resumen</p>
@@ -238,7 +313,7 @@
       </div>
       <div class="summary-grid">
         <div class="summary-card">
-          <span>Ganancia estimada</span>
+          <span>Total estimado de órdenes</span>
           <strong>$ {{ totalRevenue | number }}</strong>
         </div>
         <div class="summary-card">
@@ -252,4 +327,5 @@
       </div>
     </section>
   </div>
+  </section>
 </main>

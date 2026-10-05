@@ -1,0 +1,35 @@
+from pathlib import Path
+
+base = Path(r'C:\Users\pc\Desktop\Proyecto_Taller_mecanico\Taller mecanico')
+ts_path = base / 'src/app/pages/mechanic-dashboard/mechanic-dashboard.component.ts'
+html_path = base / 'src/app/pages/mechanic-dashboard/mechanic-dashboard.component.html'
+
+text = ts_path.read_text(encoding='utf-8')
+old = """  additionalDesc = '';\n  additionalReason = '';\n  additionalCost = 0;\n  additionalMessage = '';\n\n  // ============================================================\n  // MENSAJES\n"""
+new = """  additionalDesc = '';\n  additionalReason = '';\n  additionalCost = 0;\n  additionalMessage = '';\n  selectedPartId = 0;\n  selectedPartQty = 1;\n\n  // ============================================================\n  // MENSAJES\n"""
+if old not in text:
+    raise SystemExit('old block 1 not found')
+text = text.replace(old, new)
+
+old = """  get clients() {\n    return this.workshop\n      .users()\n      .filter((user) => user.role === 'cliente');\n  }\n\n  get selectedVehicle(): Vehicle | undefined {\n"""
+new = """  get clients() {\n    return this.workshop\n      .users()\n      .filter((user) => user.role === 'cliente');\n  }\n\n  get spareParts() {\n    return this.workshop.spareParts();\n  }\n\n  get selectedSparePart() {\n    return this.spareParts.find((part) => part.id === Number(this.selectedPartId));\n  }\n\n  get selectedVehicle(): Vehicle | undefined {\n"""
+if old not in text:
+    raise SystemExit('old block 2 not found')
+text = text.replace(old, new)
+
+old = """  saveMechanicData(): void {\n    if (!this.activeOrder) {\n      return;\n    }\n\n    const quoteTotal = this.getQuoteTotal();\n\n    this.workshop.updateOrderDetails(\n      this.activeOrder.id,\n      {\n        assignedMechanic: this.mechanicName,\n\n        diagnosis: this.diagnosis,\n\n        observations: this.observations,\n\n        failures: this.toLines(\n          this.failuresText\n        ),\n\n        repairs: this.toLines(\n          this.repairsText\n        ),\n\n        parts: this.toLines(\n          this.partsText\n        ),\n\n        laborHours:\n          Number(this.laborHours) || 0,\n\n        tests: this.toLines(\n          this.testsText\n        ),\n\n        cost: quoteTotal,\n\n        partsCost:\n          Number(this.partsCost) || 0,\n\n        laborCost:\n          Number(this.laborCost) || 0,\n\n        otherCosts:\n          Number(this.otherCosts) || 0,\n\n        quoteHours:\n          Number(this.quoteHours) || 0,\n\n        quoteTotal,\n\n        evidence: this.toLines(\n          this.evidenceText\n        )\n      },\n      (updated, error) => {\n        this.statusMessage = error || '';\n        this.saveMessage = updated ? 'Ficha mecánica guardada.' : '';\n      }\n    );\n  }\n"""
+new = """  onSparePartChange(): void {\n    const part = this.selectedSparePart;\n    if (!part) {\n      this.partsCost = Number(this.partsCost) || 0;\n      return;\n    }\n\n    this.partsCost = part.price * Math.max(1, Number(this.selectedPartQty) || 1);\n  }\n\n  saveMechanicData(): void {\n    if (!this.activeOrder) {\n      return;\n    }\n\n    const selectedPart = this.selectedSparePart;\n    const quantity = Math.max(1, Number(this.selectedPartQty) || 1);\n    const computedPartCost = selectedPart ? selectedPart.price * quantity : Number(this.partsCost) || 0;\n\n    if (selectedPart && selectedPart.stock < quantity) {\n      this.statusMessage = 'No hay stock suficiente para ese repuesto.';\n      return;\n    }\n\n    this.partsCost = computedPartCost;\n    this.statusMessage = '';\n\n    const quoteTotal = this.getQuoteTotal();\n    const mergedParts = selectedPart ? [`${selectedPart.name} x${quantity}`, ...this.toLines(this.partsText)] : this.toLines(this.partsText);\n\n    if (selectedPart) {\n      this.workshop.consumeSparePart(selectedPart.id, quantity);\n    }\n\n    this.workshop.updateOrderDetails(\n      this.activeOrder.id,\n      {\n        assignedMechanic: this.mechanicName,\n\n        diagnosis: this.diagnosis,\n\n        observations: this.observations,\n\n        failures: this.toLines(\n          this.failuresText\n        ),\n\n        repairs: this.toLines(\n          this.repairsText\n        ),\n\n        parts: mergedParts,\n\n        laborHours:\n          Number(this.laborHours) || 0,\n\n        tests: this.toLines(\n          this.testsText\n        ),\n\n        cost: quoteTotal,\n\n        partsCost: computedPartCost,\n\n        laborCost:\n          Number(this.laborCost) || 0,\n\n        otherCosts:\n          Number(this.otherCosts) || 0,\n\n        quoteHours:\n          Number(this.quoteHours) || 0,\n\n        quoteTotal,\n\n        evidence: this.toLines(\n          this.evidenceText\n        )\n      },\n      (updated, error) => {\n        this.statusMessage = error || '';\n        this.saveMessage = updated ? 'Ficha mecánica guardada.' : '';\n      }\n    );\n  }\n"""
+if old not in text:
+    raise SystemExit('old block 3 not found')
+text = text.replace(old, new)
+
+ts_path.write_text(text, encoding='utf-8')
+
+html = html_path.read_text(encoding='utf-8')
+old_html = """      <details class=\"secondary-details\"><summary>Repuestos y costos</summary><div class=\"details-content\"><label>Repuestos<textarea [(ngModel)]=\"partsText\" placeholder=\"Un repuesto por línea\"></textarea></label><div class=\"three-fields\"><label>Horas<input type=\"number\" min=\"0\" [(ngModel)]=\"laborHours\" /></label><label>Repuestos $<input type=\"number\" min=\"0\" [(ngModel)]=\"partsCost\" /></label><label>Mano de obra $<input type=\"number\" min=\"0\" [(ngModel)]=\"laborCost\" /></label></div><label>Otros costos $<input type=\"number\" min=\"0\" [(ngModel)]=\"otherCosts\" /></label></div></details>\n"""
+new_html = """      <details class=\"secondary-details\"><summary>Repuestos y costos</summary><div class=\"details-content\"><div class=\"two-fields\"><label>Repuesto<select [(ngModel)]=\"selectedPartId\" (change)=\"onSparePartChange()\"><option [ngValue]=0>Seleccione un repuesto</option><option *ngFor=\"let part of spareParts\" [ngValue]=\"part.id\">{{ part.name }} · Stock: {{ part.stock }} · ${{ part.price | number }}</option></select></label><label>Cantidad<input type=\"number\" min=\"1\" [(ngModel)]=\"selectedPartQty\" (change)=\"onSparePartChange()\" /></label></div><label>Detalle de repuestos<textarea [(ngModel)]=\"partsText\" placeholder=\"Opcional: describir repuesto adicional o nota\"></textarea></label><div class=\"three-fields\"><label>Horas<input type=\"number\" min=\"0\" [(ngModel)]=\"laborHours\" /></label><label>Repuestos $<input type=\"number\" min=\"0\" [(ngModel)]=\"partsCost\" /></label><label>Mano de obra $<input type=\"number\" min=\"0\" [(ngModel)]=\"laborCost\" /></label></div><label>Otros costos $<input type=\"number\" min=\"0\" [(ngModel)]=\"otherCosts\" /></label></div></details>\n"""
+if old_html not in html:
+    raise SystemExit('old html block not found')
+html_path.write_text(html.replace(old_html, new_html), encoding='utf-8')
+
+print('Mechanic inventory patch applied to disk')

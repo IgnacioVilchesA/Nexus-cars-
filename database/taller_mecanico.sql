@@ -36,6 +36,37 @@ CREATE TABLE IF NOT EXISTS `vehicles` (
   CONSTRAINT `fk_vehicles_users` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS `spare_parts` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(150) NOT NULL,
+  `code` VARCHAR(50) NOT NULL,
+  `category` VARCHAR(80) NOT NULL DEFAULT 'Mantenimiento',
+  `price` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `stock` INT NOT NULL DEFAULT 0,
+  `stock_minimo` INT NOT NULL DEFAULT 0,
+  `supplier` VARCHAR(120) NULL,
+  `active` TINYINT(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_spare_parts_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `stock_movements` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `spare_part_id` INT NOT NULL,
+  `user_id` INT NULL,
+  `order_id` INT NULL,
+  `type` ENUM('entrada', 'salida', 'ajuste') NOT NULL,
+  `quantity` INT NOT NULL,
+  `stock_before` INT NOT NULL,
+  `stock_after` INT NOT NULL,
+  `supplier` VARCHAR(120) NULL,
+  `reference` VARCHAR(120) NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_stock_movements_part_date` (`spare_part_id`, `created_at`),
+  KEY `idx_stock_movements_user_date` (`user_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS `work_orders` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `client_id` INT NOT NULL,
@@ -176,6 +207,20 @@ ON DUPLICATE KEY UPDATE
   `brand` = VALUES(`brand`),
   `model` = VALUES(`model`),
   `year` = VALUES(`year`);
+
+INSERT INTO `spare_parts` (`id`, `name`, `code`, `category`, `price`, `stock`, `stock_minimo`, `supplier`, `active`) VALUES
+  (1, 'Pastillas de freno delantera', 'P-FR-001', 'Frenos', 65000, 12, 4, 'AutoMax', 1),
+  (2, 'Filtro de aceite', 'F-ACE-010', 'Mantenimiento', 18000, 25, 6, 'NexoParts', 1),
+  (3, 'Batería 12V 60Ah', 'BAT-60', 'Eléctrico', 120000, 7, 3, 'PowerDrive', 1),
+  (4, 'Líquido refrigerante', 'REF-001', 'Motor', 22000, 10, 5, 'GreasePoint', 1)
+ON DUPLICATE KEY UPDATE
+  `name` = VALUES(`name`),
+  `category` = VALUES(`category`),
+  `price` = VALUES(`price`),
+  `stock` = VALUES(`stock`),
+  `stock_minimo` = VALUES(`stock_minimo`),
+  `supplier` = VALUES(`supplier`),
+  `active` = VALUES(`active`);
 
 INSERT INTO `work_orders` (`id`, `client_id`, `vehicle_id`, `description`, `status`, `created_at`, `next_maintenance`) VALUES
   (1001, 2, 1, 'Mantención de 40.000 km y revisión de frenos.', 'diagnóstico', '2024-08-28 09:00:00', '2025-02-28'),

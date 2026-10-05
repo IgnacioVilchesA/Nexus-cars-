@@ -22,8 +22,8 @@ export class RegisterComponent {
 
   register(): void {
     this.errorMessage = '';
-    if (!this.name.trim() || !this.email.trim() || this.password.length < 6) {
-      this.errorMessage = 'Completa todos los campos. La contraseña debe tener al menos 6 caracteres.';
+    if (!this.name.trim() || !this.email.trim() || this.password.length < 12) {
+      this.errorMessage = 'Completa todos los campos. La contraseña debe tener al menos 12 caracteres.';
       return;
     }
     if (this.password !== this.confirmPassword) {

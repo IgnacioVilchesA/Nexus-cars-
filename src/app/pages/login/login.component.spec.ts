@@ -22,4 +22,12 @@ describe('LoginComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('muestra el formulario para cambiar una contraseña temporal', () => {
+    component.requirePasswordChange = true;
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[role="dialog"]')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Guardar y continuar');
+  });
 });

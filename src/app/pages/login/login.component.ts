@@ -73,7 +73,7 @@ export class LoginComponent {
   }
 
   changeTemporaryPassword(): void {
-    if (this.newPassword.length < 8) { this.passwordChangeError = 'La nueva contraseña debe tener al menos 8 caracteres.'; return; }
+    if (this.newPassword.length < 12) { this.passwordChangeError = 'La nueva contraseña debe tener al menos 12 caracteres.'; return; }
     if (this.newPassword !== this.confirmPassword) { this.passwordChangeError = 'Las contraseñas no coinciden.'; return; }
     this.loading = true;
     this.workshop.changeTemporaryPassword(this.newPassword, (user, error) => {

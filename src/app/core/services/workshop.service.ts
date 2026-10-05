@@ -1,10 +1,13 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import {
   AdditionalWork,
   OrderHistory,
   OrderQuote,
   QuoteStatus,
+  SparePart,
+  StockMovement,
   User,
   Vehicle,
   WorkOrder,
@@ -32,6 +35,8 @@ export class WorkshopService {
   orders = signal<WorkOrder[]>([]);
   quotes = signal<OrderQuote[]>([]);
   additionalWorks = signal<AdditionalWork[]>([]);
+  spareParts = signal<SparePart[]>([]);
+  stockMovements = signal<StockMovement[]>([]);
   orderHistory = signal<OrderHistory[]>([]);
 
   constructor(private readonly http: HttpClient) {
@@ -40,6 +45,7 @@ export class WorkshopService {
     this.loadOrders();
     this.loadQuotes();
     this.loadAdditionalWorks();
+    this.loadSpareParts();
     this.loadOrderHistory();
     if (this.currentUser()) this.resetInactivityTimer();
     if (typeof window !== 'undefined') ['pointerdown', 'keydown', 'touchstart'].forEach(event => window.addEventListener(event, () => this.resetInactivityTimer(), { passive: true }));
@@ -125,7 +131,9 @@ export class WorkshopService {
         } catch {}
         let msg = 'El correo o la contraseña no son correctos.';
         if (err.status === 0 || err.status >= 500) {
-          msg = 'No se pudo conectar con la API y la base de datos. El registro no se guardó; verifica que el servidor Node esté iniciado en el puerto 3000.';
+          let origin = this.apiUrl;
+          try { origin = new URL(this.apiUrl).origin; } catch {}
+          msg = `No se pudo conectar con la API. Verifica que el servidor Node esté iniciado y accesible en ${origin}.`;
         } else if (err.error?.message) {
           msg = err.error.message;
         }
@@ -135,11 +143,17 @@ export class WorkshopService {
   }
 
   logout(): void {
+    if (!this.demoMode && this.currentUser()) this.http.post(`${this.apiUrl}/logout`, {}).subscribe({ error: () => {} });
     this.currentUser.set(null);
     if (this.inactivityTimer) clearTimeout(this.inactivityTimer);
     try {
       localStorage.removeItem('nexus_user');
     } catch {}
+  }
+
+  recordExport(report: string): void {
+    if (this.demoMode || this.currentUser()?.role !== 'admin') return;
+    this.http.post(`${this.apiUrl}/audit/exports`, { report }).subscribe({ error: () => {} });
   }
 
   changeTemporaryPassword(password: string, onResult: (user: User | null, error?: string) => void): void {
@@ -171,6 +185,19 @@ export class WorkshopService {
 
   createReceptionistAccount(name: string, email: string, password: string): User {
     return this.createUser({ name, email, password, role: 'recepcionista' });
+  }
+
+  createStaffAccount(name: string, email: string, password: string, role: 'mecanico' | 'recepcionista', onResult: (user: User | null, error?: string) => void): void {
+    this.http.post<User>(`${this.apiUrl}/users`, {
+      name: name.trim(), email: email.trim().toLowerCase(), password, role,
+      actorId: this.currentUser()?.id, forcePasswordChange: true
+    }).subscribe({
+      next: (user) => {
+        this.users.update((items) => [...items, user]);
+        onResult(user);
+      },
+      error: (err) => onResult(null, err.error?.message || 'No se pudo crear la cuenta.')
+    });
   }
 
   registerClient(name: string, email: string, password: string, onResult?: (user: User | null, error?: string) => void, profile: Partial<User> = {}): void {
@@ -219,7 +246,107 @@ export class WorkshopService {
   }
 
   deleteUser(id: number): void {
-    this.users.update((items) => items.filter((user) => user.id !== id));
+    if (this.demoMode) {
+      this.users.update((items) => items.map((user) => user.id === id ? { ...user, active: false } : user));
+      return;
+    }
+    this.http.delete<User>(`${this.apiUrl}/users/${id}`, { params: { actorId: String(this.currentUser()?.id || '') } }).subscribe({
+      next: (updated) => this.users.update((items) => items.map((user) => user.id === id ? updated : user)),
+      error: (err) => console.error(err.error?.message || 'No se pudo desactivar el usuario')
+    });
+  }
+
+  addSparePart(part: Omit<SparePart, 'id'>): SparePart {
+    if (this.demoMode) {
+      const created = { ...part, id: this.nextId(this.spareParts()) };
+      this.spareParts.update((items) => [...items, created]);
+      return created;
+    }
+
+    const data = { ...part, active: part.active ?? true };
+    this.http.post<SparePart>(`${this.apiUrl}/spare-parts`, { ...data, actorId: this.currentUser()?.id }).subscribe({
+      next: (created) => this.spareParts.update((items) => [...items, created]),
+      error: (err) => console.error(err.error?.message || 'No se pudo crear el repuesto')
+    });
+
+    return { ...data, id: this.nextId(this.spareParts()) };
+  }
+
+  updateSparePart(id: number, data: Partial<SparePart>): void {
+    if (this.demoMode) {
+      this.spareParts.update((items) => items.map((part) => part.id === id ? { ...part, ...data } : part));
+      return;
+    }
+
+    this.http.patch<SparePart>(`${this.apiUrl}/spare-parts/${id}`, { ...data, actorId: this.currentUser()?.id }).subscribe({
+      next: (updated) => this.spareParts.update((items) => items.map((part) => part.id === id ? updated : part)),
+      error: (err) => console.error(err.error?.message || 'No se pudo actualizar el repuesto')
+    });
+  }
+
+  deleteSparePart(id: number): void {
+    if (this.demoMode) {
+      this.spareParts.update((items) => items.filter((part) => part.id !== id));
+      return;
+    }
+
+    this.http.delete<SparePart>(`${this.apiUrl}/spare-parts/${id}`, { params: { actorId: String(this.currentUser()?.id || '') } }).subscribe({
+      next: () => this.spareParts.update((items) => items.filter((part) => part.id !== id)),
+      error: (err) => console.error(err.error?.message || 'No se pudo desactivar el repuesto')
+    });
+  }
+
+  async loadStockMovements(limit = 500): Promise<StockMovement[]> {
+    const actorId = this.currentUser()?.id;
+    if (!actorId) return [];
+    try {
+      const movements = await firstValueFrom(this.http.get<StockMovement[]>(`${this.apiUrl}/stock-movements`, {
+        params: { actorId: String(actorId), limit: String(limit) }
+      }));
+      this.stockMovements.set(movements);
+      return movements;
+    } catch {
+      console.error('No se pudo cargar el historial de inventario');
+      return [];
+    }
+  }
+
+  receiveSparePart(partId: number, quantity: number, supplier: string, reference: string, onResult: (part: SparePart | null, error?: string) => void): void {
+    const actorId = this.currentUser()?.id;
+    if (!actorId) { onResult(null, 'La sesión no está disponible.'); return; }
+    this.http.post<SparePart>(`${this.apiUrl}/spare-parts/${partId}/receive`, {
+      quantity, supplier, reference, actorId
+    }).subscribe({
+      next: (updated) => {
+        this.spareParts.update((items) => items.map((part) => part.id === partId ? updated : part));
+        this.loadStockMovements();
+        onResult(updated);
+      },
+      error: (err) => onResult(null, err.error?.message || 'No se pudo registrar la entrada.')
+    });
+  }
+
+  consumeSparePart(partId: number, quantity: number, orderId?: number): SparePart | null {
+    if (this.demoMode) {
+      const part = this.spareParts().find((item) => item.id === partId);
+      if (!part || quantity <= 0) return null;
+
+      const updated = { ...part, stock: Math.max(0, part.stock - quantity) };
+      this.spareParts.update((items) => items.map((item) => item.id === partId ? updated : item));
+      return updated;
+    }
+
+    const part = this.spareParts().find((item) => item.id === partId);
+    if (!part || quantity <= 0) return null;
+
+    const updated = { ...part, stock: Math.max(0, part.stock - quantity) };
+    this.http.patch<SparePart>(`${this.apiUrl}/spare-parts/${partId}/consume`, {
+      quantity, orderId, actorId: this.currentUser()?.id
+    }).subscribe({
+      next: (response) => this.spareParts.update((items) => items.map((item) => item.id === partId ? response : item)),
+      error: (error) => console.error(error.error?.message || 'No se pudo registrar la salida del repuesto')
+    });
+    return updated;
   }
 
   addVehicle(vehicle: Omit<Vehicle, 'id'>, onResult?: (vehicle: Vehicle | null, error?: string) => void): void {
@@ -337,12 +464,32 @@ export class WorkshopService {
     this.http.delete<User>(`${this.apiUrl}/users/${id}`, { params: { actorId: String(this.currentUser()?.id || '') } }).subscribe({ next: user => this.users.update(items => items.map(item => item.id === id ? user : item)) });
   }
 
-  updateOrder(id: number, data: Partial<WorkOrder>): void {
-    this.orders.update((items) => items.map((order) => order.id === id ? { ...order, ...data } : order));
+  updateOrder(id: number, data: Partial<WorkOrder>, onResult?: (order: WorkOrder | null, error?: string) => void): void {
+    const current = this.orders().find((order) => order.id === id);
+    if (!current) { onResult?.(null, 'Orden no encontrada.'); return; }
+    if (this.demoMode) {
+      this.orders.update((items) => items.map((order) => order.id === id ? { ...order, ...data } : order));
+      onResult?.({ ...current, ...data });
+      return;
+    }
+    this.http.patch<WorkOrder>(`${this.apiUrl}/orders/${id}`, { ...current, ...data, actorId: this.currentUser()?.id }).subscribe({
+      next: (updated) => {
+        this.orders.update((items) => items.map((order) => order.id === id ? updated : order));
+        onResult?.(updated);
+      },
+      error: (err) => onResult?.(null, err.error?.message || 'No se pudo actualizar la orden.')
+    });
   }
 
   deleteOrder(id: number): void {
-    this.orders.update((items) => items.filter((order) => order.id !== id));
+    if (this.demoMode) {
+      this.orders.update((items) => items.filter((order) => order.id !== id));
+      return;
+    }
+    this.http.delete<{ id: number; deleted: boolean }>(`${this.apiUrl}/orders/${id}`, { params: { actorId: String(this.currentUser()?.id || '') } }).subscribe({
+      next: () => this.orders.update((items) => items.filter((order) => order.id !== id)),
+      error: (err) => console.error(err.error?.message || 'No se pudo eliminar la orden')
+    });
   }
 
   updateOrderStatus(id: number, status: WorkOrderStatus, onResult?: (order: WorkOrder | null, error?: string) => void): boolean {
@@ -706,6 +853,18 @@ export class WorkshopService {
     this.additionalWorks.set([]);
   }
 
+  private loadSpareParts(): void {
+    this.http.get<SparePart[]>(`${this.apiUrl}/spare-parts`).subscribe({
+      next: (parts) => this.spareParts.set(parts),
+      error: () => this.spareParts.set([
+        { id: 1, name: 'Pastillas de freno delantera', code: 'P-FR-001', category: 'Frenos', price: 65000, stock: 12, stockMinimo: 4, supplier: 'AutoMax', active: true },
+        { id: 2, name: 'Filtro de aceite', code: 'F-ACE-010', category: 'Mantenimiento', price: 18000, stock: 25, stockMinimo: 6, supplier: 'NexoParts', active: true },
+        { id: 3, name: 'Batería 12V 60Ah', code: 'BAT-60', category: 'Eléctrico', price: 120000, stock: 7, stockMinimo: 3, supplier: 'PowerDrive', active: true },
+        { id: 4, name: 'Líquido refrigerante', code: 'REF-001', category: 'Motor', price: 22000, stock: 10, stockMinimo: 5, supplier: 'GreasePoint', active: true }
+      ])
+    });
+  }
+
   private loadOrderHistory(): void {
     this.orderHistory.set([
       {
@@ -733,6 +892,12 @@ export class WorkshopService {
     this.vehicles.set([
       { id: 1, ownerId: 2, type: 'Auto', brand: 'Mazda', model: 'CX-5', plate: 'KT-42-18', year: 2021, active: true },
       { id: 2, ownerId: 2, type: 'Moto', brand: 'Yamaha', model: 'FZ 25', plate: 'LM-08-77', year: 2022, active: true }
+    ]);
+    this.spareParts.set([
+      { id: 1, name: 'Pastillas de freno delantera', code: 'P-FR-001', category: 'Frenos', price: 65000, stock: 12, stockMinimo: 4, supplier: 'AutoMax', active: true },
+      { id: 2, name: 'Filtro de aceite', code: 'F-ACE-010', category: 'Mantenimiento', price: 18000, stock: 25, stockMinimo: 6, supplier: 'NexoParts', active: true },
+      { id: 3, name: 'Batería 12V 60Ah', code: 'BAT-60', category: 'Eléctrico', price: 120000, stock: 7, stockMinimo: 3, supplier: 'PowerDrive', active: true },
+      { id: 4, name: 'Líquido refrigerante', code: 'REF-001', category: 'Motor', price: 22000, stock: 10, stockMinimo: 5, supplier: 'GreasePoint', active: true }
     ]);
     this.orders.set([
       {

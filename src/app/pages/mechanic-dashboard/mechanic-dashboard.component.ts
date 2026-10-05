@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import {
   Vehicle,
   WorkOrder,
@@ -32,7 +32,7 @@ interface InspectionItem {
 @Component({
   selector: 'app-mechanic-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   templateUrl: './mechanic-dashboard.component.html',
   styleUrl: './mechanic-dashboard.component.css'
 })
@@ -89,6 +89,8 @@ export class MechanicDashboardComponent {
   additionalReason = '';
   additionalCost = 0;
   additionalMessage = '';
+  selectedPartId = 0;
+  selectedPartQty = 1;
 
   // ============================================================
   // MENSAJES
@@ -147,6 +149,14 @@ export class MechanicDashboardComponent {
       .filter((user) => user.role === 'cliente');
   }
 
+  get spareParts() {
+    return this.workshop.spareParts();
+  }
+
+  get selectedSparePart() {
+    return this.spareParts.find((part) => part.id === Number(this.selectedPartId));
+  }
+
   get selectedVehicle(): Vehicle | undefined {
     return this.workshop
       .vehicles()
@@ -154,29 +164,9 @@ export class MechanicDashboardComponent {
   }
 
   get activeOrder(): WorkOrder | undefined {
-    return this.mechanicOrders
+    return this.workshop
+      .orders()
       .find((order) => order.id === Number(this.selectedOrderId));
-  }
-
-  get mechanicOrders(): WorkOrder[] {
-    const mechanic = this.workshop.currentUser();
-    return this.workshop.orders().filter((order) => {
-      const assignedToMe = order.mechanicId === mechanic?.id || (!!order.assignedMechanic && order.assignedMechanic === mechanic?.name);
-      const unassignedActive = !order.mechanicId && !order.assignedMechanic && !['solicitada', 'listo', 'listo_para_entrega', 'entregado', 'cerrado', 'cancelado'].includes(order.status);
-      return assignedToMe || unassignedActive;
-    });
-  }
-
-  isUnassigned(order: WorkOrder): boolean {
-    return !order.mechanicId && !order.assignedMechanic;
-  }
-
-  takeOrder(order: WorkOrder): void {
-    const mechanic = this.workshop.currentUser();
-    if (!mechanic) return;
-    this.workshop.assignMechanic(order.id, mechanic.id, mechanic.name);
-    this.selectOrder({ ...order, mechanicId: mechanic.id, assignedMechanic: mechanic.name, status: order.status === 'recibido' ? 'en_diagnostico' : order.status });
-    this.saveMessage = 'Orden asignada a tu bandeja.';
   }
 
   get vehicleHistory(): WorkOrder[] {
@@ -194,26 +184,30 @@ export class MechanicDashboardComponent {
   // ============================================================
 
   get pendingOrders(): number {
-    return this.mechanicOrders
+    return this.workshop
+      .orders()
       .filter((order) =>
         ['solicitada', 'recibido'].includes(order.status)
       ).length;
   }
 
   get diagnosticOrders(): number {
-    return this.mechanicOrders
+    return this.workshop
+      .orders()
       .filter((order) => order.status === 'en_diagnostico')
       .length;
   }
 
   get repairOrders(): number {
-    return this.mechanicOrders
+    return this.workshop
+      .orders()
       .filter((order) => order.status === 'en_reparacion')
       .length;
   }
 
   get finishedOrders(): number {
-    return this.mechanicOrders
+    return this.workshop
+      .orders()
       .filter((order) =>
         ['trabajo_terminado', 'listo', 'listo_para_entrega'].includes(
           order.status
@@ -228,7 +222,7 @@ export class MechanicDashboardComponent {
   get filteredOrders(): WorkOrder[] {
     const search = this.searchTerm.trim().toLowerCase();
 
-    return this.mechanicOrders.filter((order) => {
+    return this.workshop.orders().filter((order) => {
 
       const vehicle = this.workshop
         .vehicles()
@@ -364,6 +358,12 @@ export class MechanicDashboardComponent {
     this.partsCost =
       order.partsCost || 0;
 
+    const selectedPartFromOrder = this.spareParts.find((part) =>
+      (order.parts || []).some((name) => name.toLowerCase().includes(part.name.toLowerCase()))
+    );
+    this.selectedPartId = selectedPartFromOrder?.id ?? 0;
+    this.selectedPartQty = 1;
+
     this.laborCost =
       order.laborCost || 0;
 
@@ -440,15 +440,59 @@ export class MechanicDashboardComponent {
     this.changeOrderStatus(order, 'recibido');
   }
 
+  isUnassigned(order: WorkOrder): boolean {
+    return !order.mechanicId && !order.assignedMechanic;
+  }
+
+  takeOrder(order: WorkOrder): void {
+    const mechanic = this.workshop.currentUser();
+    if (!mechanic) {
+      return;
+    }
+
+    this.workshop.assignMechanic(order.id, mechanic.id, mechanic.name);
+    this.selectOrder({
+      ...order,
+      mechanicId: mechanic.id,
+      assignedMechanic: mechanic.name,
+      status: order.status === 'recibido' ? 'en_diagnostico' : order.status
+    });
+    this.saveMessage = 'Orden asignada a tu bandeja.';
+  }
+
   nextActionLabel(order: WorkOrder): string | null {
-    if (order.status === 'recibido') return 'Iniciar diagnóstico';
-    if (order.status === 'cotizacion_aprobada') return 'Iniciar reparación';
-    return null;
+    if (this.isUnassigned(order)) {
+      return null;
+    }
+
+    switch (order.status) {
+      case 'solicitada':
+        return 'Aceptar solicitud';
+      case 'recibido':
+        return 'Iniciar diagnóstico';
+      case 'en_diagnostico':
+        return 'Iniciar reparación';
+      case 'en_reparacion':
+        return 'Continuar reparación';
+      default:
+        return null;
+    }
   }
 
   advanceOrder(order: WorkOrder): void {
-    if (order.status === 'recibido') this.changeOrderStatus(order, 'en_diagnostico');
-    if (order.status === 'cotizacion_aprobada') this.changeOrderStatus(order, 'en_reparacion');
+    const nextStatusMap: Partial<Record<WorkOrderStatus, WorkOrderStatus>> = {
+      solicitada: 'recibido',
+      recibido: 'en_diagnostico',
+      en_diagnostico: 'en_reparacion',
+      en_reparacion: 'trabajo_terminado'
+    };
+
+    const nextStatus = nextStatusMap[order.status as keyof typeof nextStatusMap];
+    if (!nextStatus) {
+      return;
+    }
+
+    this.changeOrderStatus(order, nextStatus);
   }
 
   changeOrderStatus(
@@ -471,22 +515,49 @@ export class MechanicDashboardComponent {
 
     this.statusMessage = '';
 
-    this.workshop.updateOrderStatus(order.id, nextStatus, (updated, error) => {
-      this.statusMessage = error || '';
-      this.saveMessage = updated ? `Orden actualizada a ${this.getStatusLabel(nextStatus)}.` : '';
-    });
+    this.workshop.updateOrderStatus(
+      order.id,
+      nextStatus
+    );
   }
 
   // ============================================================
   // GUARDAR FICHA DEL MECÁNICO
   // ============================================================
 
+  onSparePartChange(): void {
+    const part = this.selectedSparePart;
+    if (!part) {
+      this.partsCost = Number(this.partsCost) || 0;
+      return;
+    }
+
+    this.partsCost = part.price * Math.max(1, Number(this.selectedPartQty) || 1);
+  }
+
   saveMechanicData(): void {
     if (!this.activeOrder) {
       return;
     }
 
+    const selectedPart = this.selectedSparePart;
+    const quantity = Math.max(1, Number(this.selectedPartQty) || 1);
+    const computedPartCost = selectedPart ? selectedPart.price * quantity : Number(this.partsCost) || 0;
+
+    if (selectedPart && selectedPart.stock < quantity) {
+      this.statusMessage = 'No hay stock suficiente para ese repuesto.';
+      return;
+    }
+
+    this.partsCost = computedPartCost;
+    this.statusMessage = '';
+
     const quoteTotal = this.getQuoteTotal();
+    const mergedParts = selectedPart ? [`${selectedPart.name} x${quantity}`, ...this.toLines(this.partsText)] : this.toLines(this.partsText);
+
+    if (selectedPart) {
+      this.workshop.consumeSparePart(selectedPart.id, quantity, this.activeOrder.id);
+    }
 
     this.workshop.updateOrderDetails(
       this.activeOrder.id,
@@ -505,9 +576,7 @@ export class MechanicDashboardComponent {
           this.repairsText
         ),
 
-        parts: this.toLines(
-          this.partsText
-        ),
+        parts: mergedParts,
 
         laborHours:
           Number(this.laborHours) || 0,
@@ -518,8 +587,7 @@ export class MechanicDashboardComponent {
 
         cost: quoteTotal,
 
-        partsCost:
-          Number(this.partsCost) || 0,
+        partsCost: computedPartCost,
 
         laborCost:
           Number(this.laborCost) || 0,
@@ -535,12 +603,15 @@ export class MechanicDashboardComponent {
         evidence: this.toLines(
           this.evidenceText
         )
-      },
-      (updated, error) => {
-        this.statusMessage = error || '';
-        this.saveMessage = updated ? 'Ficha mecánica guardada.' : '';
       }
     );
+
+    this.saveMessage =
+      'Información de la orden guardada correctamente.';
+
+    setTimeout(() => {
+      this.saveMessage = '';
+    }, 3500);
   }
 
   // ============================================================
@@ -554,10 +625,12 @@ export class MechanicDashboardComponent {
       return;
     }
 
-    this.workshop.markWorkFinished(active.id, (updated, error) => {
-      this.statusMessage = error || '';
-      this.saveMessage = updated ? 'Trabajo marcado como terminado.' : '';
-    });
+    this.workshop.markWorkFinished(
+      active.id
+    );
+
+    this.saveMessage =
+      'Trabajo marcado como terminado.';
   }
 
   // ============================================================

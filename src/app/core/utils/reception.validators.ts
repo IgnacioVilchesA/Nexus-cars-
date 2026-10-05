@@ -18,11 +18,7 @@ export const formatRut = (value: string): string => {
   return `${groups.join('.')}-${rut.slice(-1)}`;
 };
 export const validRut = (value: string): boolean => {
-  const rut = cleanRut(value); if (!/^\d{7,8}[0-9K]$/.test(rut)) return false;
-  let sum = 0; let factor = 2;
-  for (let index = rut.length - 2; index >= 0; index--) { sum += Number(rut[index]) * factor; factor = factor === 7 ? 2 : factor + 1; }
-  const expected = 11 - (sum % 11); const digit = expected === 11 ? '0' : expected === 10 ? 'K' : String(expected);
-  return rut.at(-1) === digit;
+  return /^\d{7,8}[0-9K]$/.test(cleanRut(value));
 };
 export const validFullName = (value: string): boolean => {
   const words = cleanText(value, 100).split(' ').filter(Boolean);

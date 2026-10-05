@@ -32,15 +32,33 @@
 				<div class="password-field"><input id="password" name="password" type="password" [(ngModel)]="password" required minlength="6" placeholder="••••••••" #passwordInput="ngModel" /><span aria-hidden="true">◉</span></div>
 				@if (passwordInput.invalid && passwordInput.touched) { <small class="field-error">La contraseña debe tener al menos 6 caracteres.</small> }
 
-				<div class="form-options"><label class="remember"><input type="checkbox" name="remember" [(ngModel)]="remember" /> <span>Recordarme</span></label><a href="mailto:hola&#64;nexuscars.cl?subject=Recuperar%20contraseña">¿Olvidaste tu contraseña?</a></div>
 				<button class="submit-button" type="submit" [disabled]="loginForm.invalid || loading">
 					{{ loading ? 'Ingresando...' : 'Ingresar a mi cuenta' }} <span>→</span>
 				</button>
-				@if (errorMessage) { <p class="form-error">{{ errorMessage }}</p> }
+				@if (errorMessage) { <p class="form-error" role="alert">{{ errorMessage }}</p> }
 			</form>
-
-			
 		</div>
 	</section>
-	<div class="password-modal" *ngIf="requirePasswordChange"><section><p class="eyebrow"><span></span> Seguridad de la cuenta</p><h2>Cambia tu contraseña temporal</h2><p>Por seguridad, debes definir una contraseña nueva antes de continuar.</p><label>Nueva contraseña<input type="password" [(ngModel)]="newPassword" minlength="8" autocomplete="new-password" /></label><label>Confirmar contraseña<input type="password" [(ngModel)]="confirmPassword" minlength="8" autocomplete="new-password" /></label><p class="form-error" *ngIf="passwordChangeError">{{passwordChangeError}}</p><button type="button" class="submit-button" [disabled]="loading" (click)="changeTemporaryPassword()">{{loading ? 'Guardando…' : 'Guardar y continuar'}} <span>→</span></button></section></div>
+
+	@if (requirePasswordChange) {
+		<div class="password-modal" role="dialog" aria-modal="true" aria-labelledby="password-change-title">
+			<section>
+				<p class="eyebrow"><span></span> Seguridad de cuenta</p>
+				<h2 id="password-change-title">Actualiza tu contraseña</h2>
+				<p>Tu clave temporal debe reemplazarse antes de continuar. Usa al menos 12 caracteres.</p>
+				<form (ngSubmit)="changeTemporaryPassword()" #passwordChangeForm="ngForm">
+					<label for="new-password">Nueva contraseña</label>
+					<input id="new-password" name="newPassword" type="password" [(ngModel)]="newPassword" required minlength="12" autocomplete="new-password" />
+
+					<label for="confirm-password">Confirma la nueva contraseña</label>
+					<input id="confirm-password" name="confirmPassword" type="password" [(ngModel)]="confirmPassword" required minlength="12" autocomplete="new-password" />
+
+					@if (passwordChangeError) { <p class="form-error" role="alert">{{ passwordChangeError }}</p> }
+					<button class="submit-button" type="submit" [disabled]="passwordChangeForm.invalid || loading">
+						{{ loading ? 'Guardando...' : 'Guardar y continuar' }} <span>→</span>
+					</button>
+				</form>
+			</section>
+		</div>
+	}
 </main>
